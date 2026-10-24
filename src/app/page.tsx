@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PhonePreview } from "@/components/household-world";
+import { PhoneStory } from "@/components/phone-story";
 import { ApplianceIcon } from "@/components/appliance-icon";
 import { applianceAgents } from "@/data/appliances";
 import { energyScenario, formatHour, hourlyEnergy } from "@/data/energy";
@@ -37,8 +37,10 @@ export default function Home() {
             <p className="mt-4 text-xs text-stone-500">Your comfort and deadlines come first.</p>
           </div>
 
-          <div className="hh-home-phone"><p className="eyebrow">Tiny appliances. Big personalities.</p><PhonePreview/></div>
+          <div className="hh-home-party"><p className="eyebrow">Choose your party. Build a better routine.</p><div className="hh-home-sprites">{applianceAgents.map(agent=><Link key={agent.id} href="/household" className={`hh-home-sprite ${agent.id}`}><ApplianceIcon id={agent.id}/><strong>{agent.name}</strong><span>LV.01 · MEET ↗</span></Link>)}</div><p className="hh-kicker">A whole little world is waiting.</p><Link href="/household" className="hh-start-game">ENTER YOUR WORLD →</Link></div>
         </section>
+
+        <PhoneStory/>
 
         <aside className="flex items-start gap-3 rounded-xl border border-[#d9dfc7] bg-[#eff2e8] p-4 text-sm leading-6 text-stone-600"><span className="mt-0.5 text-emerald-800" aria-hidden="true">ⓘ</span><p><strong className="font-semibold text-stone-800">A transparent demo.</strong> Appliance states and messages are simulated. Prices and carbon data are synthetic. No devices are connected. Negotiate and save a plan in <Link href="/household" className="font-semibold text-emerald-900 underline underline-offset-2">Appliance Parliament</Link>, or inspect calculations in <a href="/energy-parliament" className="font-semibold text-emerald-900 underline underline-offset-2">Energy Parliament</a>. The playable scene has API-placeholder replies; simulation controls run functional calculations.</p></aside>
 

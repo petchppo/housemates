@@ -1,0 +1,18 @@
+.hm-scroll-stage { position:relative; height:calc(100svh + var(--stage-travel,115svh)); min-width:0; }
+.hm-scroll-sticky { position:sticky; top:0; height:100svh; min-width:0; isolation:isolate; }
+.hm-scroll-skip { position:absolute; right:10px; top:8px; z-index:8; width:72px; min-height:44px; padding:7px 0; border:0; background:transparent; color:#51435c; font:600 11px/1.3 "Courier New",monospace; cursor:pointer; }
+.hm-scroll-skip>span { display:inline-flex; align-items:center; gap:7px; padding:5px 9px; border:1px solid #77678355; border-radius:999px; background:#faf7edf0; }
+.hm-scroll-skip b { font-weight:400; }
+.hm-scroll-skip:hover>span { background:#fffdf7; border-color:#776783; }
+.hm-scroll-skip:focus-visible { outline:3px solid #75539b; outline-offset:4px; }
+.hm-scroll-exit { height:1px; scroll-margin-top:12px; }
+.hm-scroll-exit span { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.hm-scroll-exit:focus-visible { outline:3px solid #75539b; outline-offset:5px; }
+.hm-scroll-stage[data-static=true] { height:auto; }
+.hm-scroll-stage[data-static=true] .hm-scroll-sticky { position:relative; height:auto; min-height:0; }
+.hm-scroll-stage[data-static=true] .hm-scroll-skip { display:none; }
+@media(prefers-reduced-motion:reduce),(max-height:620px) {
+  .hm-scroll-stage { height:auto; }
+  .hm-scroll-sticky { position:relative; height:auto; min-height:0; }
+  .hm-scroll-skip { display:none; }
+}

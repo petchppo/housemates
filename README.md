@@ -1,6 +1,6 @@
 # Housemates
 
-A Stanford CleanTech hackathon prototype for household energy planning. Built with Next.js App Router, TypeScript, and Tailwind CSS. No smart-home hardware, credentials, or external services are needed.
+A Stanford CleanTech hackathon prototype for household energy planning. Built with Next.js App Router, TypeScript, Tailwind CSS, and Three.js. Explore an original 3D household, replay a calculated energy plan, and meet its pixel-art appliance characters. No smart-home hardware, credentials, or external services are needed.
 
 ## Run locally
 
@@ -11,9 +11,21 @@ npm install
 npm run dev -- --hostname 0.0.0.0
 ```
 
-Open http://localhost:3000 for the preserved homepage, http://localhost:3000/household for the complete Appliance Parliament experience, and http://localhost:3000/energy-parliament for the scheduling laboratory. The homepage links to both. See [DEMO.md](DEMO.md) for the verified 90-second script.
+Open http://localhost:3000 for the homepage, http://localhost:3000/household for Appliance Parliament, and http://localhost:3000/energy-parliament for the scheduling laboratory. The homepage links to both. See [DEMO.md](DEMO.md) for the 90-second presentation script; [PROGRESS.md](PROGRESS.md) records completed verification separately.
 
-For a phone on the same Wi-Fi, use the laptop's local IP address, e.g. http://192.168.1.10:3000/energy-parliament. Some guest networks block connections between devices.
+For a phone on the same Wi-Fi, use the laptop's local IP address, e.g. http://192.168.1.10:3000/household. Some guest networks block connections between devices.
+
+## Explore the household
+
+The world and phone are separate, vertically stacked scenes. Native sticky positioning holds each scene in view during its short scroll sequence; ordinary scrolling continues afterward. **Skip** moves past a sequence without trapping the keyboard or intercepting wheel/touch scrolling. Reduced motion and short viewports use ordinary document flow instead of pinning.
+
+- **3D world:** an actual Three.js/WebGL scene with modeled house, landscape, and appliances. By default, scrolling advances the simulated clock from Day 1 at 8am to Day 2 at 8am and gently changes the front-facing view; it does not automatically spin the house through a full turn. Drag or use the rotation and zoom controls to explore manually. Day/night lighting and resting character poses are visual simulation.
+- **Pixel status panel:** Evie and Bubbles show current simulated kW, completed/required kWh, session progress, accrued USD cost, and modeled kg CO₂e from the current feasible schedule. XP and levels come from remembered training. Chill remains a protected comfort character with no modeled AC energy or savings.
+- **Replay controls:** use the time slider, Play/Pause, Day/Night, or **Jump to job** to inspect a planned session. These manual actions leave scroll-following mode; **Scroll time** restores it. Reduced-motion and short-viewport fallbacks retain the manual clock. A plan must exist before scheduled appliance activity can be replayed. Replaying a proposed plan does not approve or execute it.
+- **Phone story:** a CSS 3D phone starts with an empty conversation, then reveals the user, Evie, Bubbles, and Chill as you scroll. **Next message**, **Show all**, and **Restart** provide manual controls; **Follow scroll** returns from manual playback. Reduced motion initially reveals all messages. This is a local demonstration conversation with an AI connection pending.
+- **Working planner:** **Plan the morning** and **Quiet after 10pm** calculate real scheduling options. **Say something to your party** produces a local placeholder reply and does not change planning constraints.
+
+The scene canvas also supports arrow-key rotation, `+`/`−` zoom, and `Home` to reset its view. Appliance buttons provide an alternative to selecting objects in the scene. No camera movement, lighting change, or playback control changes household scheduling constraints.
 
 ## Checks
 
@@ -34,11 +46,14 @@ src/
     energy-parliament/page.tsx Scheduling test route
     household/page.tsx         Integrated conversation/demo route
   components/
-    appliance-icon.tsx         Shared appliance artwork
+    appliance-icon.tsx         Shared pixel appliance icon wrapper
+    pixel-appliance.tsx        Original pixel-art appliance portraits
     energy-parliament.tsx      Laboratory and shared timeline
     household-app.tsx          World shell, proposals, training, plan views
-    household-world.tsx        Original interactive SVG scene + 3D phone preview
-    household-world.css        Scoped illustration, phone, motion and controls
+    household-world.tsx        Simulated clock, pixel status panel, planner controls
+    household-scene-3d.tsx     Three.js household, lighting, selection and camera
+    scroll-stage.tsx           Native sticky progress, skip and motion fallbacks
+    phone-story.tsx            Scroll-revealed CSS 3D phone conversation
     household-settings.tsx     Validated preference and load-profile editor
     use-household.ts           Browser store, hydration, persistence, reset
   domain/
@@ -48,11 +63,12 @@ src/
     household.ts               Shared state and canonical proposal fingerprints
     conversation.ts            Typed intent parsing and computed dialogue
     memory.ts                  Validated local snapshots, XP and useful unlocks
+    simulation.ts              Planned interval replay and accumulated usage stats
   data/
     appliances.ts              Three simulated appliance definitions
     energy.ts                  Existing 24-hour synthetic energy profile
     scheduling.ts              Default windows and fixed baseline starts
-tests/                         Engine, conversation, memory, browser-store regressions
+tests/                         Engine, conversation, memory, storage, simulation regressions
 ```
 
 ## Scheduling API
@@ -85,7 +101,9 @@ Each occupied interval uses the shared arithmetic helper: `costUsd = kWh × $/kW
 
 ## Simulation contract and limitations
 
-All appliance activity is simulated. Homepage dialogue is scripted. No real telemetry, device control, AI conversation, or measured savings is claimed. The integrated /household stores preferences, settings, recent conversation, training, and up to 12 saved input snapshots in this browser. The laboratory remains an isolated, session-only test tool. Saved totals are recomputed from validated inputs, not trusted from storage. Memory is not synchronized between devices.
+All appliance activity is simulated. Phone dialogue is scripted. No real telemetry, device control, live AI response, or measured savings is claimed. The integrated /household stores preferences, settings, recent planning conversation, training, and up to 12 saved input snapshots in this browser. The laboratory remains an isolated, session-only test tool. Saved totals are recomputed from validated inputs, not trusted from storage. Memory is not synchronized between devices.
+
+`getSimulationStats(schedules, absoluteHour)` replays validated schedule intervals over hours 0–48. It accumulates interval energy, cost, and modeled emissions proportionally to elapsed active duration, preserving partial EV hours and zero-power dishwasher phases. Missing flexible-appliance schedules remain idle. These changing counters describe a fictional replay of a proposed schedule, not metered usage or completed real-world work. Scene lighting and sleeping poses do not establish AC status, indoor temperature, or device safety.
 
 Energy data is hand-authored and synthetic, not a utility tariff, forecast, or live grid feed. It approximates a California weekday pattern: expensive 4–9pm electricity and lower midday carbon intensity. Currency is USD; carbon is estimated operational grid emissions in g CO₂e/kWh, not lifecycle emissions. Taxes, fixed charges, charging losses, exports, owned solar, demand charges, and other household loads are excluded. Results are estimates under these assumptions, not a complete bill or real-world carbon measurement.
 
@@ -94,7 +112,7 @@ Hourly starts, continuous constant-power EV charging, per-hour dishwasher profil
 
 ## Conversation, memory, and training
 
-The playable household scene accepts judge input into a clearly labeled local API-placeholder response. It makes no network/model request and does not change planning constraints. Separate simulation buttons run the existing deterministic planner. The tilted phone contains a scripted sample, not a live chat.
+The playable household scene accepts judge input into a clearly labeled local API-placeholder response. It makes no network/model request and does not change planning constraints. Separate quest buttons run the existing deterministic planner. The phone's scroll reveal and manual playback present a scripted sample, not a live chat. Temporary scene playback and placeholder text are separate from persisted household preferences and saved plans.
 
 The underlying deterministic conversation API accepts whole-hour AM/PM deadlines, inclusive start windows, explicit Day 1/Day 2 qualifiers, cost/carbon/balanced objectives, revisions, rejections, calculation explanations, and approval. “Don’t run the dishwasher after 10 PM” is a completion cutoff at hour 22. Breakfast defaults to Day 2 at 7am; an earlier remembered cutoff stays enforced. Use Preferences for energy, power, duration, consumption profile, and shared limits.
 

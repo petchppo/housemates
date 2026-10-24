@@ -73,3 +73,14 @@ Ownership: lead owns shell/homepage/integration/docs; conversation specialist ow
 Acceptance loop: implement → render in browser → capture desktop/mobile and interaction states → reviewers view screenshots → prioritized feedback → owner repair → new captures → reviewer recheck → integrated lint/typecheck/tests/build + browser journey → document and commit. Never call a source-only review visual acceptance.
 
 Design revision passed the screenshot repair/review loop, browser interaction checks, lint, TypeScript, 84 tests, and production build. See PROGRESS.md for evidence and remaining API-placeholder scope.
+
+## Actual 3D / scroll-play mission — current
+
+- Lead owns household integration, game HUD, clock controls, responsive shell, homepage, docs and final checks.
+- 3D specialist owns procedural Three.js geometry, camera/input, responsive fitting, lifecycle and gradual lighting/sleep states.
+- Scroll/phone specialist owns shared native sticky stages and progressive phone sequence; then independently reviews actual viewport captures.
+- Simulation/sprite specialist owns pure schedule replay, seven regression tests and pixel portraits; then independently reviews rendered scene/HUD.
+
+Use Three.js directly, without a second React renderer or downloaded assets. Preserve the deterministic engine and persistence. Implement → inspect rendered dimensions/scroll/lighting → repair oversized controls, tiny art/type, clipping and lifecycle defects → independent re-review → lint/typecheck/tests/build → local checkpoint. User steering specifically requires a larger model, cleaner buttons and softer gradual day/night transitions.
+
+Completed the actual 3D / scroll-play implementation and visual repair loop. Latest user steering replaces the full orbit with a front-facing arc and ties scroll to a full simulated day. Scene lighting and sky blend together. Final verification and limitations are recorded in PROGRESS.md; release remains local.

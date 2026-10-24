@@ -97,3 +97,23 @@
  .hh-nav button { justify-content:flex-start; padding-left:12px; }
  .hh-lab-link { grid-column:1/-1; margin-top:0; }
 }
+/* Game UI: readable units remain intact; numbers use the same pixel-console rhythm. */
+.hh-play-sequence { display:block; }
+.hh-play-sequence .hh-mission { margin-top:40px; }
+.hh-shell .hh-proposal,.hh-shell .hh-memory-card,.hh-shell .hh-secondary { border:2px solid #55415f; box-shadow:4px 4px 0 #c8b6d5; }
+.hh-shell .hh-proposal h2,.hh-shell .hh-memory-card h2,.hh-shell .hh-secondary h2,.hh-shell .hh-secondary h3 { font-family:'Courier New',monospace; font-weight:700; }
+.hh-shell .hh-proposal .text-2xl,.hh-shell .hh-proposal .text-lg,.hh-shell .hh-secondary .text-2xl { font-family:'Courier New',monospace; font-variant-numeric:tabular-nums; font-weight:700; letter-spacing:-.6px; }
+.hh-shell .avatar { image-rendering:pixelated; border-radius:0; box-shadow:2px 2px 0 #ac98b8; }
+.hh-shell .household-progress { border-radius:0; border:1px solid #75617f; }
+.hh-shell .household-progress::-webkit-progress-bar,.hh-shell .household-progress::-webkit-progress-value { border-radius:0; }
+.hh-shell .household-progress::-webkit-progress-value { background:repeating-linear-gradient(90deg,#8cad60 0 10px,#c9ddab 10px 12px); }
+.hh-home-party { border:2px solid #50405d; background:#e8ddf0; padding:28px; box-shadow:6px 6px 0 #bca8c8; text-align:center; }
+.hh-home-sprites { display:flex; justify-content:space-around; gap:10px; margin:30px 0; }
+.hh-home-sprite { display:flex; flex-direction:column; align-items:center; padding:16px 8px; border:1px solid #85708f; box-shadow:3px 3px 0 #ad98bb; flex:1; min-width:0; }
+.hh-home-sprite svg { width:64px; height:64px; image-rendering:pixelated; }
+.hh-home-sprite strong { margin-top:12px; font:700 15px 'Courier New',monospace; }
+.hh-home-sprite span { font:10px 'Courier New',monospace; margin-top:6px; }
+.hh-start-game { display:inline-block; margin-top:16px; padding:16px; border:2px solid #3a2e43; background:#d8ee91; box-shadow:3px 3px 0 #3a2e43; font:700 12px 'Courier New',monospace; }
+@media(max-width:720px) { .hh-home-party { padding:20px 12px; } .hh-home-sprite svg { width:45px; height:45px; } }
+/* Native scrolling drives the pinned sequences without programmatic smooth-scroll lag. */
+html:has(.hh-play-sequence),html:has(.hm-phone-story) { scroll-behavior:auto; }

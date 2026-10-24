@@ -162,3 +162,34 @@ Local review artifacts (not committed application assets): `/private/tmp/housema
 The world is an original SVG/CSS illustration with simulated activity, not real telemetry or a WebGL physics simulation. The phone is a CSS 3D illustration with scripted sample text. Live AI replies remain explicitly unimplemented until an API is supplied. Free-text preview state is temporary; actual planning preferences and saved plans retain existing browser-local persistence. Reduced-motion behavior was inspected in CSS; no physical-device or external screen-reader certification is claimed. Existing energy-model limitations above still apply.
 
 Local release checkpoint is recorded by the `Redesign Housemates as an interactive pixel household` commit on `codex/housemates-mvp`; no remote push or public deployment.
+
+## Actual 3D / scroll-play revision — verification in progress
+
+Starting checkpoint: f80e2db. User requested actual rotatable/zoomable geometry, pinned scroll sequences, pixel character portraits, schedule-derived live simulation stats, progressive phone dialogue and a more game-like UI. Follow-up feedback required substantially larger scene framing, simpler buttons, and gradual pastel day/dusk/night transitions. Three native specialists were assigned exclusive files; lead integrates and verifies actual browser behavior. Three.js and its type package are the only new direct dependencies.
+
+### Completed 3D / scroll-play implementation
+
+- Original procedural Three.js house, floating lawn, trees and three appliance models; explicit rotate/zoom/reset, keyboard controls, responsive camera fitting, WebGL fallback and disposal.
+- User correction supersedes the initial full orbit: scroll now follows a gentle ±15° front-facing arc and advances the fictional clock from day 1 08:00 to day 2 08:00. Manual clock controls override scroll-follow; Scroll time resumes it. Manual camera rotation stays within front-facing bounds.
+- Continuous pastel sage → peach/lavender → muted night sky, interpolated scene lighting, warm windows and idle sleep animation. Active scheduled appliances stay awake. Night-to-day browser samples showed intermediate darkness values 0.3932 → 0.1108 → 0.0024, with actual screenshots confirming changes to geometry illumination as well as the backdrop.
+- Pixel portraits throughout; game-style HUD reports schedule-derived power, elapsed cycle progress, energy, cost and modeled carbon via the pure validated simulation ledger. Seven new regressions cover boundaries, midnight/partial sessions, zero-energy phases, invalid ledgers, negative prices and exact totals.
+- Native pinned world/phone stages with Skip; phone starts empty and progressively reveals four sample messages. Manual reveal/restart controls work. Short landscape and reduced motion use ordinary flow. Free text remains a local API placeholder; existing planner, approval, preferences and saved plans remain functional.
+
+### Self-correcting visual review and repairs
+
+Three specialists implemented disjoint scene, phone/scroll, and simulation/sprite files. Independent reviewers actually viewed desktop/tablet/mobile/narrow/landscape and lighting-state screenshots. Repairs included larger camera framing, softer compact buttons, stronger 12px secondary HUD values, moving a tree away from Chill, matching model/sprite colors, fixing blank frames after canvas resize, and gradual lighting/sleep states. Latest review caught four clock buttons squeezing narrow screens and camera controls overlaying the island: clock controls now use a four-column mobile row and camera controls sit below the phone canvas. A short-landscape flex-height gap was corrected with an explicit 350px scene.
+
+### Verification for this revision
+
+- Lint and TypeScript pass. Automated tests: 91/91 pass (previous 84 plus seven simulation tests). Final production build passes for all three application routes, including the last responsive CSS repairs.
+- Actual browser captures at 1280×900, 768×1024, 390×844, 320×740, 844×390: no horizontal overflow. Landscape clock and bottom HUD reachable through native scrolling.
+- World remained pinned at top 0 while scrolling changed clock 08:00 → 19:30 → 00:00. Front of house stayed visible in all sampled states. Independent reviewer accepted the actual morning/dusk/night and intermediate fade images.
+- Jump to job showed Bubbles at 0.6 kW, 0.06 kWh; playback advanced to 0.25 kWh with computed cost/carbon, then paused. End-of-horizon Play correctly restarts the clock. Keyboard rotation, zoom/reset and character selection work; browser error log empty.
+- Phone Restart/Next changed visible bubbles 0 → 1; Skip reaches the actual plan. Placeholder submission left saved plan amounts and cutoff unchanged. Home mobile screenshot has no horizontal overflow. Earlier full approval/persistence/reset checks above remain backed by the unchanged domain/browser-store tests.
+- Review artifacts are temporary files under /private/tmp, not application assets: housemates-cycle-{morning,dusk,night}.png, housemates-fade-{early,middle,day}.png, housemates-accepted-{mobile,small}.png, housemates-accepted-landscape-fixed.png, and prior phone/desktop/tablet captures.
+
+### Current limitations (supersedes prior SVG-world note)
+
+The household is actual WebGL geometry, not real hardware or a physics/thermal model. The iPhone is a CSS perspective frame with sample dialogue. Live replies remain placeholders pending an API. Simulation clock/scene selections are temporary; saved planning preferences retain browser-local persistence. Physical-device, assistive-technology and low-end GPU certification were not performed; reduced-motion behavior is implemented and source-reviewed. No external assets, paid calls, remote deployment or device connection were used.
+
+Final independent review accepted the repaired 390px, 320px and landscape screenshots; no material visual findings remain. Whitespace checks pass. Release is saved by the local commit titled `Add interactive 3D household and scroll-driven day cycle`; no push or deployment.

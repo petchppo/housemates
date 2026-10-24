@@ -1,4 +1,4 @@
-# Housemates — interactive design demo
+# Housemates — 3D household demo
 
 Open **http://localhost:3000/household**. The introduction remains at **http://localhost:3000** and the scheduling laboratory at **http://localhost:3000/energy-parliament**.
 
@@ -17,15 +17,23 @@ No API key, account, paid service, or connected hardware is needed. A phone on t
 
 | Time | Action | Explain |
 | --- | --- | --- |
-| 0–15s | Open the household. Select Evie, Bubbles, and Chill in the miniature scene; toggle Day/Dusk. | “These are original simulated characters. The visual world responds to interaction; no device is connected.” |
-| 15–30s | Type a request into “What would you tell your housemates?” and press Enter or the preview arrow. | “The AI API is not connected yet. This is explicitly a placeholder reply, and typing here does not change constraints.” |
-| 30–40s | Point to the dimensional phone. Use **View straight on** to read the sample. | “This conversation is a scripted preview of the future experience.” |
-| 40–55s | Select **Plan the morning**, then **Set a quiet evening** under **Local simulation**. | These buttons run the real deterministic optimizer. The second action sets Bubbles’ completion cutoff to Day 1 at 10pm. The browser focuses and scrolls to the calculated proposal. |
-| 55–70s | Select **Inspect calculations** or **The plan**; compare original/proposed sessions and switch the timeline to Day 2. | Energy × each occupied hour’s synthetic rate determines costs/carbon. The baseline stays fixed. Read the actual numbers; do not promise fixed results. |
-| 70–80s | Return to **Parliament**, then **Approve & save**. | A feasible input snapshot is saved locally. No hardware command is sent. |
-| 80–90s | Refresh. Show saved cutoff/plan, then **Meet & train**. | Preferences and training persist. The level 2 remembered-routine shortcut creates a new validated proposal. |
+| 0–15s | Open the household and scroll through its 3D scene. Select an appliance; demonstrate a small drag or zoom. | “This is a modeled 3D household. Scrolling follows a simulated day and a gentle front-facing camera arc. No device is connected.” |
+| 15–25s | Continue to the command deck; type into **Say something to your party** and press Enter. | “The AI connection is pending. This local placeholder reply does not change our schedule.” |
+| 25–40s | Select **Plan the morning**, then **Quiet after 10pm**. Inspect the newly calculated proposal after each action. | These buttons run the deterministic optimizer. The second action sets Bubbles’ completion cutoff to Day 1 at 10pm. Read the actual results rather than promising fixed savings. |
+| 40–50s | Return to the world and use **Jump to job**, then Play or the time slider. Point to the pixel status panel. | “These kW, kWh, cost, and modeled carbon counters replay the proposed schedule. They are calculated simulation values, not telemetry.” Chill remains excluded. |
+| 50–65s | Continue down to the phone section. Scroll to reveal its messages, or select **Show all**. | “The phone stays in view while the demonstration conversation unfolds.” One outside disclosure identifies the pending AI connection. |
+| 65–80s | Continue to the proposal, use **Inspect calculations** or **The plan**, compare the baseline and Day 2 timeline, then **Approve & save**. | Energy × each occupied hour’s synthetic rate determines cost/carbon. The fixed baseline preserves an honest comparison. Approval saves a simulated plan and sends no hardware command. |
+| 80–90s | Refresh. Show the saved cutoff/plan, then **Meet & train**. | Preferences and training persist. Level 2 provides a remembered-routine shortcut; core optimization is always available. |
 
-Simulation controls are separate from the API-placeholder composer. Their computed reasoning remains inspectable under **Planning history & calculation notes**. The phone sample contains no savings claims.
+Quest controls are separate from the API-placeholder composer. Their computed reasoning remains inspectable under **Planning history & calculation notes**. The phone sample contains no savings claims. Use **Skip** to move past either pinned scene when presenting quickly.
+
+## Scroll and keyboard alternatives
+
+- Ordinary page scrolling drives the two separate scenes; there is no wheel/touch scroll trap. The world keeps a gentle front-facing arc rather than automatically revolving through 360 degrees.
+- Drag the 3D world to explore. Focus the canvas for arrow-key rotation, `+`/`−` zoom, and `Home` to reset; use appliance buttons for selection.
+- Scrolling follows Day 1 at 8am through Day 2 at 8am. The time slider, Play/Pause, Day/Night, and **Jump to job** switch to direct control; **Scroll time** restores scroll following. Camera changes and playback do not change scheduling constraints or approve a plan. Reduced-motion and short-viewport fallbacks keep the manual clock.
+- The phone offers **Next message**, **Show all**, and **Restart**. After a manual action, **Follow scroll** restores scroll-driven playback.
+- Reduced-motion settings and short viewports disable pinning. The phone initially shows all four messages, and the sections remain reachable through ordinary scrolling.
 
 ## Reset and repeat
 
@@ -38,10 +46,11 @@ Simulation controls are separate from the API-placeholder composer. Their comput
 - For cost/carbon tradeoffs, set Evie power to 3 kW, latest start to Day 2 noon, deadline Day 2 at 4pm. Compare the three independently calculated objectives in **The plan**.
 - A dishwasher profile `0.9, 0.3` models two hourly phases totaling 1.2 kWh. Incorrect totals trigger validation feedback.
 - Rejection withdraws approval. **Recalculate using current preferences** creates a fresh proposal while honoring remembered constraints.
-- Selecting characters, changing the illustration’s lighting, rotating the phone, or typing in the placeholder composer never changes a saved energy plan.
+- Selecting characters, exploring the 3D camera, replaying time, advancing phone messages, or typing in the placeholder composer never changes a saved energy plan.
+- At night, nonactive characters may display sleeping poses. These are visual states: Chill's pose does not mean real cooling is off or that a comfort limit has been satisfied.
 
 ## Honest boundaries
 
 Synthetic prices and carbon intensity repeat over 48 fictional hours. Carbon is a modeled average-intensity estimate, not measured or necessarily avoided marginal emissions. Taxes, fixed charges, charging losses, other loads, and AC savings are excluded. Chill has no thermal model and is not optimized. No external model/network request is made for the preview reply. The underlying deterministic intent API remains available for future agent integration.
 
-PROGRESS.md records actual automated checks and desktop/mobile visual-review evidence. Browser-sized mobile testing is not a claim of testing physical smart-home hardware.
+The world uses Three.js/WebGL; the phone frame uses CSS 3D. Both are local visual demonstrations. Scene statistics come from schedule intervals, including partial hours, rather than fabricated activity or hardcoded savings. This document is a presentation guide; PROGRESS.md records the checks and visual reviews actually completed for each checkpoint. Browser-sized mobile testing is not a claim of testing physical smart-home hardware.

@@ -57,3 +57,11 @@ Autonomous project edits, ordinary necessary dependencies, subagents, local test
 ## Current visual/interaction revision (supersedes chat-board presentation)
 
 Use an original handheld-game-inspired aesthetic with pixel details and low-poly dimensional appliances; no copied Pokémon characters, logos, or assets. The main experience is a selectable interactive household scene. Judge free-text input has an explicit local placeholder reply until a later API integration; never imply that a model is answering. Working deterministic scheduling remains accessible through clearly labeled simulation controls. Show a scripted sample conversation in a dimensional iPhone-style frame. Preserve original homepage information, laboratory, all calculations, preferences, memory and progression. Provide responsive layouts, keyboard controls, reduced motion, honest simulation labels, and actual screenshot-based independent visual review with a repair/review loop.
+
+## Actual 3D and scroll-play revision
+
+The household now requires actual WebGL geometry (house, lawn, appliances), a gentle front-facing scroll-driven arc plus constrained manual rotation/zoom, gradual dawn/dusk/night lighting, and sleeping idle characters. Small portraits use original crisp pixel sprites. The dashboard exposes a controllable fictional 48-hour clock with schedule-derived power, session progress, energy, cost and modeled carbon; these are simulated values, never telemetry. Nighttime animation must not suppress a scheduled active task or imply AC control.
+
+World and phone each occupy a native sticky scroll stage. Phone bubbles start hidden and reveal progressively; keep one concise demo/API-pending disclosure outside the phone rather than repeated labels inside it. Manual controls, skip, reduced-motion support and short-landscape ordinary-flow fallback must keep all content accessible. Inspect actual desktop, tablet, mobile, narrow-phone and landscape renders; iterate on model scale, control hierarchy, legibility and lighting.
+
+Scrolling the world advances its simulation clock from 08:00 on day 1 to 08:00 on day 2. Manual clock controls override scroll-follow until explicitly resumed. Keep the house front visible; no automatic 360° spin. Sky, scene illumination, windows and sleep animation must blend continuously through dusk/dawn.

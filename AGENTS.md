@@ -47,3 +47,9 @@ For every owned milestone: implement → run relevant checks → inspect exact f
 Latest design scope: original handheld-game pixel chrome, low-poly household characters, interactive judge scene with explicit API-placeholder replies, and a scripted conversation in a dimensional phone. Keep scheduling calculations and existing functional panels. Do not connect an API until configured; never replace placeholders with invented model output.
 
 For visual changes, capture the rendered site at desktop and phone widths. At least one independent visual reviewer must actually view those screenshots; source review alone is insufficient. Report concrete layout, interaction, contrast, and mobile defects, return them to the owning implementer, then capture/review the repairs. Check keyboard and reduced-motion behavior plus simulation/placeholder labels. Record what was actually reviewed in PROGRESS.md.
+
+## 3D / scroll-play guidance
+
+Use the existing Three.js scene and native ScrollStage; do not add a competing renderer/scroll-hijacking library. Keep wheel scrolling native and provide explicit zoom, keyboard controls and animation skip. Dispose WebGL resources, fit the full island on resize, paint after buffer resize, and pause background animation. Honor reduced motion. Model colors should match pixel portraits. Check 1280×900, 768×1024, 390×844, 320×740 and short landscape; never infer visual acceptance from source alone. Derive HUD power/energy/cost/carbon from validated schedules through simulation.ts. Use explicit simulation labels, protect Chill and preserve distinct queued/active/complete states alongside cosmetic sleep.
+
+Scroll through 08:00 day 1 to 08:00 day 2; manual clock overrides must remain explicit. Keep both automatic and manual rotation front-facing. Fade WebGL lighting and CSS sky together. On narrow phones put camera controls below the canvas; short-landscape scene needs explicit height so flex sizing cannot leave a blank gap.
