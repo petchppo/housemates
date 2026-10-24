@@ -66,3 +66,89 @@
  .hm-tutorial-npc:has(.hm-tutorial-expanded:not([hidden])) .hm-tutorial-actions { display:none; }
 }
 @media(prefers-reduced-motion:reduce) { .hm-tutorial-npc * { animation:none!important; transition:none!important; } }
+
+/* Original handheld RPG dialogue: crisp frames, a named guide and readable text. */
+.hm-tutorial-npc { color:#303c3c; filter:drop-shadow(0 4px 0 #263d3d24); }
+.hm-tutorial-bubble { border:3px solid #3c5e5b; border-radius:3px; background:#fffbe8; box-shadow:inset 0 0 0 2px #cbd9c3,0 0 0 1px #ecf0d9; padding:0 12px 10px; }
+.hm-tutorial-bubble::before { width:12px; height:12px; left:-9px; background:#fffbe8; border-left:3px solid #3c5e5b; border-bottom:3px solid #3c5e5b; }
+.hm-tutorial-header { border-bottom:2px solid #d8decb; margin-bottom:7px; gap:6px; }
+.hm-tutorial-nameplate { color:#315e57; font-size:12px; letter-spacing:2px; }
+.hm-tutorial-nameplate span { color:#b88d47; }
+.hm-tutorial-step { color:#697568; font-size:9px; }
+.hm-tutorial-prompt { position:relative; padding-right:8px; font-size:12px; line-height:1.6; color:#384541; }
+.hm-tutorial-caret { display:inline-block; margin-left:6px; color:#517766; font-size:14px; animation:pip-dialogue-caret 1s steps(2,end) infinite; }
+.hm-tutorial-npc button { border-radius:2px; font:700 11px/1.4 "Courier New",monospace; color:#365f58; }
+.hm-tutorial-header>button { font-size:20px; }
+.hm-tutorial-npc button:not(:disabled):hover { background:#dde8cf; }
+.hm-tutorial-actions .hm-tutorial-advance { border-radius:2px; border:2px solid #385d55; box-shadow:inset 0 0 0 1px #6c9680; background:#426f60; color:#fffbe9; }
+.hm-tutorial-actions .hm-tutorial-advance:hover { background:#315747; }
+.hm-tutorial-actions .hm-tutorial-advance:disabled { color:#818377; background:#e1e2d1; border-color:#c5cab5; box-shadow:none; }
+.hm-tutorial-npc button:focus-visible,.hm-tutorial-help summary:focus-visible { outline:3px solid #b9894e; outline-offset:3px; }
+.hm-tutorial-expanded { border-top:2px solid #cbd8bd; }
+.hm-tutorial-topic,.hm-tutorial-copy h3 { color:#385d55; }
+.hm-tutorial-copy>p,.hm-tutorial-note,.hm-tutorial-paging>span { color:#617266; }
+.hm-tutorial-help>summary { color:#3e665c; }
+.hm-tutorial-help button { border:1px solid #b9c8af; }
+.hm-tutorial-help button[aria-pressed=true] { border-color:#507861; background:#e0ebcf; }
+.hm-tutorial-npc.is-minimized { width:174px; }
+.hm-tutorial-npc.is-minimized .hm-tutorial-header { border:0; margin:0; }
+.hm-tutorial-npc.is-minimized .hm-tutorial-portrait { flex-basis:72px; width:72px; }
+.hm-tutorial-npc.is-minimized .hm-tutorial-portrait .hm-guide-mascot { width:72px; }
+@keyframes pip-dialogue-caret { 0%,100% { transform:translateY(0); } 50% { transform:translateY(2px); } }
+@media(max-width:640px) { .hm-tutorial-npc { width:340px; }.hm-tutorial-prompt { font-size:12px; }.hm-tutorial-npc.is-minimized { width:148px; }.hm-tutorial-npc.is-minimized .hm-tutorial-portrait { flex-basis:56px; width:56px; }.hm-tutorial-npc.is-minimized .hm-tutorial-portrait .hm-guide-mascot { width:56px; } }
+@media(prefers-reduced-motion:reduce) { .hm-tutorial-caret { animation:none; } }
+
+/* The game presentation reserves a row beneath the world; it never floats over choices. */
+.hm-tutorial-npc.hm-tutorial-dock {
+ position:relative; inset:auto; z-index:3; width:100%; max-width:none; height:100%; min-height:0;
+ display:grid; grid-template-columns:112px minmax(0,1fr); align-items:stretch; gap:17px;
+ padding:16px 24px; border:3px solid #203e39; border-radius:2px; background:#fff9df;
+ box-shadow:inset 0 0 0 3px #fefdf1,inset 0 0 0 6px #a6b49a,0 4px 0 #203e39;
+ color:#203e39; filter:none; pointer-events:auto; font-family:"Courier New",monospace;
+}
+.hm-tutorial-dock::after,.hm-tutorial-dock .hm-tutorial-bubble::before { display:none; }
+.hm-tutorial-dock .hm-tutorial-portrait { width:112px; height:112px; margin:0; align-self:center; background:#e7e2ed; border:2px solid #8b8294; box-shadow:inset 0 0 0 4px #f4efef; }
+.hm-tutorial-dock .hm-tutorial-portrait .hm-guide-mascot { width:108px; height:108px; }
+.hm-tutorial-dock .hm-tutorial-bubble { min-height:0; padding:0; border:0; border-radius:0; box-shadow:none; background:transparent; }
+.hm-tutorial-dock .hm-tutorial-header { min-height:25px; margin:0 0 8px; border:0; gap:12px; }
+.hm-tutorial-dock .hm-tutorial-nameplate { font-size:15px; color:#203e39; letter-spacing:2px; }
+.hm-tutorial-dock .hm-tutorial-step { font-size:10px; color:#586856; }
+.hm-tutorial-written { color:#586856; font-size:9px; letter-spacing:1px; }
+.hm-tutorial-dock .hm-tutorial-prompt { font-size:15px; line-height:1.6; max-width:80ch; margin:0; min-height:48px; }
+.hm-tutorial-dock .hm-tutorial-actions { justify-content:flex-end; gap:8px; margin-top:8px; }
+.hm-tutorial-dock .hm-tutorial-actions button { min-height:40px; padding:7px 13px; font-size:12px; border:2px solid #9cae91; background:#f6f3d9; color:#203e39; }
+.hm-tutorial-dock .hm-tutorial-actions .hm-tutorial-advance { order:3; background:#527d68; border-color:#203e39; color:#fff9df; box-shadow:inset 0 0 0 1px #97b19a; }
+.hm-tutorial-dock .hm-tutorial-actions .hm-tutorial-advance:not(:disabled):hover { background:#315747; color:#fff9df; }
+.hm-tutorial-dock .hm-tutorial-actions .hm-tutorial-advance:disabled { color:#68725e; border-color:#b1b69a; background:#dedfc9; box-shadow:none; }
+.hm-tutorial-dock .hm-tutorial-back { margin-right:auto; }
+.hm-tutorial-dock .hm-tutorial-expanded { position:absolute; bottom:49px; left:0; right:0; height:calc(100% - 76px); max-height:none; margin:0; padding:5px 8px; border:1px solid #b1bf9f; background:#fff9df; }
+.hm-tutorial-dock .hm-tutorial-topic { display:none; }
+.hm-tutorial-dock .hm-tutorial-copy h3 { margin-top:0; font-size:13px; }
+.hm-tutorial-dock .hm-tutorial-copy>p { color:#3c5146; font-size:12px; line-height:1.5; }
+.hm-tutorial-dock .hm-tutorial-note { margin-top:0; }
+@media(max-width:650px) {
+ .hm-tutorial-npc.hm-tutorial-dock { grid-template-columns:54px minmax(0,1fr); grid-template-rows:22px minmax(0,1fr) 44px; gap:4px 10px; padding:11px; }
+ .hm-tutorial-dock .hm-tutorial-bubble,.hm-tutorial-dock .hm-tutorial-bubble>div[id] { display:contents; }
+ .hm-tutorial-dock .hm-tutorial-portrait { grid-column:1; grid-row:1 / 3; width:54px; height:64px; max-height:100%; min-height:0; align-self:center; margin:0; overflow:hidden; }
+ .hm-tutorial-dock .hm-tutorial-portrait .hm-guide-mascot { width:62px; height:62px; margin-left:-6px; }
+ .hm-tutorial-dock .hm-tutorial-nameplate { font-size:13px; }
+ .hm-tutorial-written { display:none; }
+ .hm-tutorial-dock .hm-tutorial-header { grid-column:2; grid-row:1; margin:0; min-height:0; }
+ .hm-tutorial-dock .hm-tutorial-prompt { grid-column:2; grid-row:2; min-height:0; margin:0; overflow-y:auto; scrollbar-width:thin; font-size:12px; line-height:1.6; }
+ .hm-tutorial-dock .hm-tutorial-actions { grid-column:1 / -1; grid-row:3; position:static; margin:0; gap:5px; }
+ .hm-tutorial-dock .hm-tutorial-actions button { min-height:44px; padding:6px 9px; font-size:11px; }
+ .hm-tutorial-dock .hm-tutorial-expanded { grid-column:2; grid-row:2; position:static; height:auto; min-height:0; margin:0; padding:4px; }
+}
+@media(max-height:500px) and (min-width:651px) {
+ .hm-tutorial-npc.hm-tutorial-dock { padding:9px 14px; grid-template-columns:68px minmax(0,1fr); gap:13px; }
+ .hm-tutorial-dock .hm-tutorial-portrait,.hm-tutorial-dock .hm-tutorial-portrait .hm-guide-mascot { width:64px; height:64px; }
+ .hm-tutorial-dock .hm-tutorial-header { margin-bottom:2px; min-height:20px; }
+ .hm-tutorial-dock .hm-tutorial-prompt { font-size:11px; line-height:1.4; min-height:0; padding-right:245px; }
+ .hm-tutorial-dock .hm-tutorial-actions { position:absolute; right:0; bottom:0; margin:0; }
+ .hm-tutorial-dock .hm-tutorial-actions button { min-height:36px; padding:4px 8px; font-size:10px; }
+ .hm-tutorial-dock .hm-tutorial-back { margin:0; }
+ .hm-tutorial-dock:has(.hm-tutorial-expanded:not([hidden])) .hm-tutorial-actions { display:flex; }
+ .hm-tutorial-dock .hm-tutorial-expanded { left:0; right:250px; bottom:0; height:calc(100% - 23px); max-height:none; }
+}
+.hm-tutorial-dock .hm-tutorial-scroll-hint { display:block; position:sticky; top:-5px; z-index:1; padding:3px 0; margin-bottom:4px; border-bottom:1px solid #c1ccac; background:#fff9df; color:#52694e; font:9px/1.4 'Courier New',monospace; }
+.hm-tutorial-dock .hm-tutorial-expanded:focus-visible,.hm-tutorial-dock .hm-tutorial-prompt:focus-visible { outline:2px solid #b1823c; outline-offset:1px; }

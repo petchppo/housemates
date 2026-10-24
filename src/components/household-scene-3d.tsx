@@ -5,6 +5,8 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import type { ApplianceId } from "@/domain/appliances";
+import { APPLIMON_CATALOG, type ApplimonId } from "@/domain/applimon-catalog";
+import { cameraFocusDistance, cameraFocusProgress } from "@/domain/camera-focus";
 import { CITY_LANDMARK_IDS, createCityLandmark } from "./city-landmark-geometry";
 import "./household-scene-3d.css";
 
@@ -14,6 +16,10 @@ type WeatherKind = "clear" | "cloudy" | "rain" | "snow";
 type Props = {
   selected: ApplianceId;
   onSelect: (id: ApplianceId) => void;
+  /** Opt-in demo camera behavior; passive and legacy scenes keep their overview. */
+  focusOnSelect?: boolean;
+  focusRequest?: { id: ApplimonId; nonce: number };
+  onSelectApplimon?: (id: ApplimonId) => void;
   hour: number;
   activeIds: ApplianceId[];
   scrollProgress: number;
@@ -26,6 +32,10 @@ type Props = {
   onFinishBuild?: () => void;
   finishBuildLabel?: string;
   finishBuildDisabled?: boolean;
+  /** Passive landing-page storytelling; the interactive demo retains all controls. */
+  presentation?: boolean;
+  additionalApplimons?: readonly ApplimonId[];
+  additionalActiveIds?: readonly ApplimonId[];
 };
 type Command = "left" | "right" | "up" | "down" | "in" | "out" | "reset";
 type Character = { entrance: THREE.Group; group: THREE.Group; eyes: THREE.Group; asleep: THREE.Group; ring: THREE.Mesh; indicator: THREE.Mesh; baseY: number; sleepBlend: number };
@@ -40,9 +50,9 @@ function nightWeight(hour: number) {
 }
 
 /** Original procedural geometry. All displayed appliance activity is simulated. */
-export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollProgress, regionTheme, residenceType, visibleAppliances, construction, weatherKind, onConstructionComplete, onFinishBuild, finishBuildLabel, finishBuildDisabled }: Props) {
+export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollProgress, regionTheme, residenceType, visibleAppliances, construction, weatherKind, onConstructionComplete, onFinishBuild, finishBuildLabel, finishBuildDisabled, presentation = false, additionalApplimons, additionalActiveIds, focusOnSelect = false, focusRequest, onSelectApplimon }: Props) {
   const host = useRef<HTMLDivElement>(null);
-  const latest = useRef<Props>({ selected, onSelect, hour, activeIds, scrollProgress, regionTheme, residenceType, visibleAppliances, construction, weatherKind, onConstructionComplete });
+  const latest = useRef<Props>({ selected, onSelect, hour, activeIds, scrollProgress, regionTheme, residenceType, visibleAppliances, construction, weatherKind, onConstructionComplete, presentation, additionalApplimons, additionalActiveIds, focusOnSelect, focusRequest, onSelectApplimon });
   const buildCommand = useRef<(action: "skip" | "replay") => void>(() => {});
   const command = useRef<(action: Command) => void>(() => {});
   const [unavailable, setUnavailable] = useState(false);
@@ -51,7 +61,7 @@ export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollPr
   const night = hour % 24 >= 20 || hour % 24 < 6;
   const twilight = (hour % 24 >= 5 && hour % 24 < 8) || (hour % 24 >= 18 && hour % 24 < 21);
 
-  useEffect(() => { latest.current = { selected, onSelect, hour, activeIds, scrollProgress, regionTheme, residenceType, visibleAppliances, construction, weatherKind, onConstructionComplete }; }, [selected, onSelect, hour, activeIds, scrollProgress, regionTheme, residenceType, visibleAppliances, construction, weatherKind, onConstructionComplete]);
+  useEffect(() => { latest.current = { selected, onSelect, hour, activeIds, scrollProgress, regionTheme, residenceType, visibleAppliances, construction, weatherKind, onConstructionComplete, presentation, additionalApplimons, additionalActiveIds, focusOnSelect, focusRequest, onSelectApplimon }; }, [selected, onSelect, hour, activeIds, scrollProgress, regionTheme, residenceType, visibleAppliances, construction, weatherKind, onConstructionComplete, presentation, additionalApplimons, additionalActiveIds, focusOnSelect, focusRequest, onSelectApplimon]);
 
   useEffect(() => {
     const mount = host.current;
@@ -60,8 +70,8 @@ export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollPr
     try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); }
     catch { queueMicrotask(() => setUnavailable(true)); return; }
     const canvas = renderer.domElement;
-    canvas.tabIndex = 0;
-    canvas.setAttribute("aria-label", "Interactive 3D simulated household. Drag to turn the front view, use arrow keys to rotate, plus and minus to zoom, Home to reset. Select appliances with the buttons below.");
+    canvas.tabIndex = latest.current.presentation ? -1 : 0;
+    canvas.setAttribute("aria-label", latest.current.presentation ? "A low-poly simulated home with Evie, Bubbles and Chill. Scrolling gently turns the house and changes daylight." : "Interactive 3D simulated household. Drag to turn the front view, use arrow keys to rotate, plus and minus to zoom, Home to reset. Select appliances with the buttons below.");
     canvas.setAttribute("role", "img");
     renderer.setClearColor(0x000000, 0);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -78,6 +88,7 @@ export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollPr
     camera.position.set(12, 10, 16);
     const controls = new OrbitControls(camera, canvas);
     controls.target.set(0, 0, 0);
+    controls.enabled = !latest.current.presentation;
     controls.enablePan = false;
     controls.enableDamping = true;
     controls.dampingFactor = 0.09;
@@ -338,9 +349,67 @@ export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollPr
     const fan = mesh(new THREE.TorusGeometry(0.43, 0.045, 5, 18), ink, ac, 0, 0.88, -0.48);
     for (let i = 0; i < 4; i++) { const blade = box(ac, cream, 0, 0.88, -0.49, 0.6, 0.11, 0.04); blade.rotation.z = i * Math.PI / 4; }
     fan.castShadow = false;
+    // The extended party uses its own front garden strip; core appliance geometry stays untouched.
+    const extraEntries = APPLIMON_CATALOG.filter(entry => !entry.legacyId);
+    const extraGarden = grouped();
+    box(extraGarden, mat(0x947d74), 0, -0.4, 5.18, 10.6, 0.65, 2.15);
+    box(extraGarden, lawnMaterial, 0, -0.03, 5.18, 10.8, 0.18, 2.3);
+    const extraModels = extraEntries.map((entry, index) => {
+      const entrance = grouped();
+      const group = grouped(entrance); group.position.set(-4.5 + index * 1.5, 0.16, 5.15); group.scale.setScalar(.8);
+      group.userData.applimonId = entry.id;
+      const body = mat(new THREE.Color(entry.color).getHex()), accent = mat(new THREE.Color(entry.accent).getHex());
+      const status = mat(0xb8dc87, { emissive: 0x8bbb56, emissiveIntensity: 0 });
+      const pad = cylinder(group, cream, 0, .015, 0, .64, .07, 8); pad.receiveShadow = true;
+      let faceY = 1.2, faceZ = .48, top = 1.65;
+      let rotor: THREE.Group | null = null;
+      if (entry.shape === "washer" || entry.shape === "dryer") {
+        roundedBox(group, body, 0, .75, 0, 1.04, 1.4, .92);
+        box(group, cream, 0, 1.3, .48, .9, .2, .035);
+        const rim = cylinder(group, accent, 0, .65, .5, .35, .07, 12); rim.rotation.x = Math.PI / 2;
+        const drum = cylinder(group, entry.shape === "washer" ? chillBlue : peach, 0, .65, .55, .26, .04, 12); drum.rotation.x = Math.PI / 2;
+        rotor = grouped(group); rotor.position.set(0, .65, .585);
+        for (let i = 0; i < 3; i++) { const spoke = box(rotor, cream, 0, 0, 0, .36, .05, .025); spoke.rotation.z = i * Math.PI / 3; }
+        faceY = 1.29;
+      } else if (entry.shape === "tank") {
+        cylinder(group, body, 0, .85, 0, .49, 1.55, 10);
+        cylinder(group, accent, 0, 1.64, 0, .48, .1, 10);
+        for (const x of [-.22,.22]) { cylinder(group, x < 0 ? peach : chillBlue, x, 1.83, 0, .07, .3, 6); }
+        box(group, cream, 0, .66, .49, .45, .6, .035); box(group, accent, 0, .7, .515, .22, .3, .025);
+        faceY = 1.3; top = 2.08;
+      } else if (entry.shape === "dehumidifier") {
+        roundedBox(group, body, 0, .73, 0, .93, 1.35, .8);
+        for (let i = 0; i < 4; i++) box(group, accent, 0, 1.22 - i * .08, .42, .7, .025, .02);
+        roundedBox(group, chillBlue, 0, .34, .42, .66, .38, .04, .03);
+        faceY = .91; faceZ = .43; top = 1.6;
+      } else if (entry.shape === "vacuum") {
+        cylinder(group, accent, 0, .16, 0, .59, .22, 12); cylinder(group, body, 0, .33, 0, .57, .16, 12);
+        cylinder(group, accent, 0, .48, -.1, .17, .16, 8);
+        box(group, ink, 0, .25, .575, .74, .12, .025);
+        faceY = .36; faceZ = .56; top = .88;
+      } else if (entry.shape === "fridge") {
+        roundedBox(group, body, 0, .98, 0, .98, 1.86, .9);
+        box(group, accent, 0, 1.16, .47, .98, .055, .025);
+        box(group, ink, .35, 1.45, .49, .045, .3, .035); box(group, ink, .35, .78, .49, .045, .45, .035);
+        faceY = 1.57; top = 2.12;
+      } else {
+        cylinder(group, accent, 0, .08, 0, .45, .12, 8); cylinder(group, accent, 0, .54, 0, .075, .92, 6);
+        const housing = cylinder(group, body, 0, 1.27, 0, .53, .18, 12); housing.rotation.x = Math.PI / 2;
+        const rim = mesh(new THREE.TorusGeometry(.46,.045,4,12), accent, group, 0, 1.27, .12);
+        rim.castShadow = false;
+        rotor = grouped(group); rotor.position.set(0,1.27,.14);
+        for (let i = 0; i < 3; i++) { const angle = i * Math.PI * 2 / 3; const blade = box(rotor, cream, -Math.sin(angle) * .18, Math.cos(angle) * .18, 0, .17, .42, .035); blade.rotation.z = angle; }
+        faceY = 1.27; faceZ = .19; top = 1.99;
+      }
+      for (const x of [-.17,.17]) box(group, ink, x, faceY, faceZ + .025, .07,.1,.04);
+      box(group, ink, 0, faceY - .15, faceZ + .025,.11,.025,.03);
+      const indicator = ball(group, status, .36, .12, .52, .055);
+      const title = label(entry.name, "#342b46", 192); title.scale.multiplyScalar(.72); title.position.set(0,top + .18,0); group.add(title);
+      return { id: entry.id, entrance, group, indicator, status, rotor, baseY: .16 };
+    });
     type DropState = { object: THREE.Group; base: THREE.Vector3; scale: THREE.Vector3; requested: boolean; started: number; done: boolean };
     const dropStates = new Map<THREE.Group, DropState>();
-    const stagedGroups = [groundGroup, pathGroup, decorGroup, ...Object.values(landscapes), ...Object.values(landmarks), ...Object.values(residences), ...Object.values(roofs), ...Object.values(weatherGroups), ...Object.values(characters).map((character) => character.entrance)];
+    const stagedGroups = [groundGroup, pathGroup, decorGroup, extraGarden, ...extraModels.map(model => model.entrance), ...Object.values(landscapes), ...Object.values(landmarks), ...Object.values(residences), ...Object.values(roofs), ...Object.values(weatherGroups), ...Object.values(characters).map((character) => character.entrance)];
     for (const object of stagedGroups) dropStates.set(object, { object, base: object.position.clone(), scale: object.scale.clone(), requested: false, started: 0, done: false });
     let localReplay = 0, skipBuild = false, previousBuildKey = "", previousSignature = "", completedSignature = "";
     buildCommand.current = (action) => { if (action === "skip") skipBuild = true; else localReplay++; };
@@ -354,7 +423,8 @@ export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollPr
       const level = props.construction?.level ?? 3;
       const theme = props.regionTheme ?? "garden", residence = props.residenceType ?? "detached";
       const visibleIds = props.visibleAppliances ?? (["evie", "bubbles", "chill"] as const);
-      const signature = `${props.construction?.replayKey ?? "legacy"}/${localReplay}/${level}/${theme}/${residence}/${props.weatherKind ?? "none"}/${visibleIds.join(",")}`;
+      const extraIds = extraEntries.map(entry => entry.id).filter(id => props.additionalApplimons?.includes(id));
+      const signature = `${props.construction?.replayKey ?? "legacy"}/${localReplay}/${level}/${theme}/${residence}/${props.weatherKind ?? "none"}/${visibleIds.join(",")}/${extraIds.join(",")}`;
       const buildKey = `${props.construction?.replayKey ?? "legacy"}/${localReplay}`;
       if (signature !== previousSignature) { skipBuild = false; previousSignature = signature; }
       if (buildKey !== previousBuildKey) {
@@ -384,11 +454,13 @@ export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollPr
       for (const [key, object] of Object.entries(roofs)) apply(object, level >= 1 && key === residence, 4);
       for (const [key, object] of Object.entries(weatherGroups)) apply(object, level >= 2 && Boolean(props.weatherKind) && key === props.weatherKind, 5);
       for (const [index, id] of (["evie", "bubbles", "chill"] as ApplianceId[]).entries()) apply(characters[id].entrance, level >= 3 && visibleIds.includes(id), 6 + index);
+      apply(extraGarden, extraIds.length > 0, 2);
+      for (const [index, model] of extraModels.entries()) apply(model.entrance, level >= 3 && extraIds.includes(model.id), 9 + index);
       lawnMaterial.color.setHex({ garden: palette.lawn, coastal: 0xd9d2a8, tropical: 0x9dbd81, urban: 0xb9c5ae, nordic: 0xc6d3bd, dry: 0xdac092 }[theme]);
       mount.dataset.constructionLevel = String(level);
       mount.dataset.region = theme; mount.dataset.residence = residence;
       mount.dataset.landmark = props.regionTheme ? CITY_LANDMARK_IDS[theme] : "none";
-      mount.dataset.appliances = level >= 3 ? visibleIds.join(",") : "";
+      mount.dataset.appliances = level >= 3 ? [...visibleIds,...extraIds].join(",") : "";
       const complete = [...dropStates.values()].every((state) => !state.requested || state.done);
       mount.dataset.buildState = complete ? "complete" : "building";
       if (props.construction && complete && completedSignature !== signature) { completedSignature = signature; props.onConstructionComplete?.(); }
@@ -400,8 +472,52 @@ export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollPr
     const porchLight = new THREE.PointLight(0xffbc70, 0, 9); porchLight.position.set(0, 2.2, 0.8); world.add(porchLight);
     let rotationAnchor = 0.5;
     let sceneRotation = THREE.MathUtils.clamp((latest.current.scrollProgress - rotationAnchor) * Math.PI / 6, -Math.PI / 12, Math.PI / 12);
+    let fitDistance = 0;
+    let extendedFit = extraEntries.some(entry => latest.current.additionalApplimons?.includes(entry.id));
+    let focusedAppliance: ApplimonId | null = null;
+    let consumedFocusRequest = "";
+    type FocusMotion = { fromPosition: THREE.Vector3; fromTarget: THREE.Vector3; position: THREE.Vector3; target: THREE.Vector3; started: number };
+    let focusMotion: FocusMotion | null = null;
+    const clearFocusMotion = () => { focusMotion = null; controls.enableDamping = !reduced; };
+    const focusCharacter = (id: ApplimonId, immediate = false) => {
+      const props = latest.current;
+      if (!props.focusOnSelect || props.presentation || (props.construction?.level ?? 3) < 3) return false;
+      const core = id === "evie" || id === "bubbles" || id === "chill" ? characters[id] : null;
+      const model = core ?? extraModels.find(entry => entry.id === id);
+      if (!model || !model.entrance.visible || !model.group.visible) return false;
+      if (core ? !(props.visibleAppliances ?? ["evie", "bubbles", "chill"]).includes(id as ApplianceId) : !props.additionalApplimons?.includes(id)) return false;
+      world.updateMatrixWorld(true);
+      const bounds = new THREE.Box3();
+      model.group.traverseVisible(object => {
+        if (!(object instanceof THREE.Mesh) || object === model.indicator || (core && object === core.ring)) return;
+        object.geometry.computeBoundingBox();
+        if (object.geometry.boundingBox) bounds.union(object.geometry.boundingBox.clone().applyMatrix4(object.matrixWorld));
+      });
+      if (bounds.isEmpty()) return false;
+      const sphere = bounds.getBoundingSphere(new THREE.Sphere());
+      const target = sphere.center;
+      const distance = cameraFocusDistance(Math.max(sphere.radius, .35), camera.fov, camera.aspect);
+      // Clear residual orbit momentum before starting a new camera move.
+      controls.enableDamping = false; controls.update();
+      const direction = camera.position.clone().sub(controls.target).normalize();
+      const position = target.clone().addScaledVector(direction, distance);
+      focusedAppliance = id; controls.minDistance = Math.max(.8, distance * .5);
+      controls.maxDistance = Math.max(50, fitDistance * 1.8);
+      focusMotion = { fromPosition: camera.position.clone(), fromTarget: controls.target.clone(), position, target, started: performance.now() };
+      if (immediate || reduced) { camera.position.copy(position); controls.target.copy(target); clearFocusMotion(); controls.update(); }
+      mount.dataset.focusAppliance = id;
+      return true;
+    };
+    controls.addEventListener("start", clearFocusMotion);
     command.current = (action) => {
-      if (action === "reset") { controls.reset(); rotationAnchor = latest.current.scrollProgress; sceneRotation = 0; world.rotation.y = 0; renderer.render(scene, camera); return; }
+      clearFocusMotion();
+      if (action === "reset") {
+        focusedAppliance = null; mount.dataset.focusAppliance = "overview";
+        controls.minDistance = 10; controls.maxDistance = Math.max(50, fitDistance * 1.8);
+        controls.enableDamping = false; controls.update(); controls.reset(); controls.enableDamping = !reduced;
+        rotationAnchor = latest.current.scrollProgress; sceneRotation = 0; world.rotation.y = 0;
+        renderer.render(scene, camera); return;
+      }
       const sphere = new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));
       if (action === "left") sphere.theta -= 0.25;
       if (action === "right") sphere.theta += 0.25;
@@ -415,17 +531,21 @@ export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollPr
       camera.position.copy(controls.target).add(new THREE.Vector3().setFromSpherical(sphere)); controls.update(); renderer.render(scene, camera);
     };
     const keydown = (event: KeyboardEvent) => {
+      if (latest.current.presentation) return;
       const mapping: Record<string, Command> = { ArrowLeft: "left", ArrowRight: "right", ArrowUp: "up", ArrowDown: "down", "+": "in", "=": "in", "-": "out", Home: "reset" };
       if (mapping[event.key]) { event.preventDefault(); command.current(mapping[event.key]); }
       if (event.key === "Escape") canvas.blur();
     };
     const focus = () => { setFocused(true); };
     const blur = () => { setFocused(false); };
-    let pointerStart: { x: number; y: number } | null = null;
-    const pointerDown = (event: PointerEvent) => { pointerStart = { x: event.clientX, y: event.clientY }; canvas.focus({ preventScroll: true }); };
+    let pointerStart: { x: number; y: number; moved: boolean } | null = null;
+    const pointerDown = (event: PointerEvent) => { if (latest.current.presentation) return; pointerStart = { x: event.clientX, y: event.clientY, moved: false }; canvas.focus({ preventScroll: true }); };
+    const pointerMove = (event: PointerEvent) => { if (pointerStart && Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y) > 7) pointerStart.moved = true; };
+    const pointerCancel = () => { pointerStart = null; };
     const raycaster = new THREE.Raycaster();
     const pointerUp = (event: PointerEvent) => {
-      if (!pointerStart || Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y) > 7) return;
+      const start = pointerStart; pointerStart = null;
+      if (!start || start.moved || Math.hypot(event.clientX - start.x, event.clientY - start.y) > 7) return;
       const bounds = canvas.getBoundingClientRect();
       raycaster.setFromCamera(new THREE.Vector2((event.clientX - bounds.left) / bounds.width * 2 - 1, -(event.clientY - bounds.top) / bounds.height * 2 + 1), camera);
       const hits = raycaster.intersectObjects(world.children, true);
@@ -435,8 +555,14 @@ export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollPr
         while (ancestor) { if (!ancestor.visible) shown = false; ancestor = ancestor.parent; }
         if (!shown) continue;
         let object: THREE.Object3D | null = hit.object;
-        while (object && !object.userData.applianceId) object = object.parent;
-        if (object) { latest.current.onSelect(object.userData.applianceId as ApplianceId); break; }
+        while (object && !object.userData.applianceId && !object.userData.applimonId) object = object.parent;
+        if (object) {
+          const id = (object.userData.applianceId ?? object.userData.applimonId) as ApplimonId;
+          focusCharacter(id);
+          if (id === "evie" || id === "bubbles" || id === "chill") latest.current.onSelect(id);
+          else latest.current.onSelectApplimon?.(id);
+          break;
+        }
         // Solid scenery occludes characters; sprites and selection rings do not.
         if (hit.object instanceof THREE.Mesh) break;
       }
@@ -445,8 +571,7 @@ export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollPr
     let stopped = false, frame = 0, visible = true;
     const contextLost = (event: Event) => { event.preventDefault(); stopped = true; cancelAnimationFrame(frame); setUnavailable(true); };
     canvas.addEventListener("keydown", keydown); canvas.addEventListener("focus", focus); canvas.addEventListener("blur", blur);
-    canvas.addEventListener("pointerdown", pointerDown); canvas.addEventListener("pointerup", pointerUp); canvas.addEventListener("webglcontextlost", contextLost);
-    let fitDistance = 0;
+    canvas.addEventListener("pointerdown", pointerDown); canvas.addEventListener("pointermove", pointerMove); canvas.addEventListener("pointercancel", pointerCancel); canvas.addEventListener("pointerup", pointerUp); canvas.addEventListener("webglcontextlost", contextLost);
     const resize = () => {
       const width = mount.clientWidth, height = mount.clientHeight;
       if (!width || !height) return;
@@ -454,12 +579,18 @@ export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollPr
       // Fit the island with breathing room, retaining relative zoom on resize.
       const halfVertical = THREE.MathUtils.degToRad(camera.fov / 2);
       const halfHorizontal = Math.atan(Math.tan(halfVertical) * camera.aspect);
-      const nextFit = Math.max(7.1 / Math.tan(halfHorizontal), 5.1 / Math.tan(halfVertical)) * 1.14;
+      const nextFit = Math.max((extendedFit ? 8 : 7.1) / Math.tan(halfHorizontal), (extendedFit ? 6 : 5.1) / Math.tan(halfVertical)) * 1.14;
       const offset = camera.position.clone().sub(controls.target);
       const zoomRatio = fitDistance ? offset.length() / fitDistance : 1;
       fitDistance = nextFit;
-      camera.position.copy(controls.target).add(offset.normalize().multiplyScalar(nextFit * zoomRatio));
-      controls.position0.copy(controls.target).add(new THREE.Vector3(12, 10, 16).normalize().multiplyScalar(nextFit));
+      controls.target0.set(0, 0, extendedFit ? .75 : 0);
+      controls.position0.copy(controls.target0).add(new THREE.Vector3(12, 10, 16).normalize().multiplyScalar(nextFit));
+      controls.maxDistance = Math.max(50, nextFit * 1.8);
+      if (focusedAppliance) focusCharacter(focusedAppliance, true);
+      else {
+        controls.target.copy(controls.target0);
+        camera.position.copy(controls.target).add(offset.normalize().multiplyScalar(nextFit * zoomRatio));
+      }
       controls.update();
       // Resizing clears WebGL's drawing buffer, including in inactive tabs.
       // Always paint the fitted scene once; only continuous animation is paused.
@@ -473,6 +604,8 @@ export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollPr
     const render = (time: number, force = false) => {
       if (stopped || (!force && (!visible || document.hidden))) return;
       const props = latest.current;
+      const needsExtendedFit = extraEntries.some(entry => props.additionalApplimons?.includes(entry.id));
+      if (extendedFit !== needsExtendedFit) { extendedFit = needsExtendedFit; resize(); }
       const delta = previousTime ? Math.min((time - previousTime) / 1000, 0.1) : 0;
       previousTime = time;
       // Exponential easing is stable across refresh rates and rapid clock scrubs.
@@ -514,12 +647,41 @@ export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollPr
             material.opacity = character.sleepBlend;
           }
         });
-        character.ring.visible = props.selected === id;
+        character.ring.visible = !props.presentation && props.selected === id;
         character.indicator.visible = active;
         character.group.position.y = character.baseY + (active && !reduced ? Math.sin(time * 0.003 + character.group.position.x) * 0.035 : 0);
       }
+      for (const model of extraModels) {
+        const active = Boolean(props.additionalActiveIds?.includes(model.id));
+        model.indicator.visible = active; model.status.emissiveIntensity = active ? .55 : 0;
+        model.group.position.y = model.baseY + (active && !reduced ? Math.sin(time * .003) * .025 : 0);
+        if (model.rotor) model.rotor.rotation.z = active && !reduced ? time * .003 : 0;
+      }
       stageConstruction(props, time);
+      const request = props.focusRequest;
+      const requestKey = request ? `${request.id}/${request.nonce}` : "";
+      if (requestKey && requestKey !== consumedFocusRequest) {
+        consumedFocusRequest = requestKey;
+        // A map click and its parent selection callback can arrive in adjacent frames.
+        if (!(focusMotion && focusedAppliance === request!.id)) focusCharacter(request!.id);
+      }
+      if (focusedAppliance) {
+        const shown = ["evie", "bubbles", "chill"].includes(focusedAppliance)
+          ? (props.visibleAppliances ?? ["evie", "bubbles", "chill"]).includes(focusedAppliance as ApplianceId)
+          : props.additionalApplimons?.includes(focusedAppliance);
+        if (!shown || !props.focusOnSelect || props.presentation || (props.construction?.level ?? 3) < 3) command.current("reset");
+      }
+      if (focusMotion) {
+        const progress = cameraFocusProgress(time - focusMotion.started, reduced);
+        camera.position.lerpVectors(focusMotion.fromPosition, focusMotion.position, progress);
+        controls.target.lerpVectors(focusMotion.fromTarget, focusMotion.target, progress);
+        if (progress === 1) clearFocusMotion();
+      }
       controls.update();
+      mount.dataset.focusAppliance = focusedAppliance ?? "overview";
+      mount.dataset.cameraMoving = String(Boolean(focusMotion));
+      mount.dataset.cameraDistance = camera.position.distanceTo(controls.target).toFixed(3);
+      mount.dataset.cameraTarget = controls.target.toArray().map(value => value.toFixed(3)).join(",");
       mount.dataset.cameraAzimuthDegrees = (controls.getAzimuthalAngle() * 180 / Math.PI).toFixed(2);
       renderer.render(scene, camera);
       if (visible && !document.hidden) frame = requestAnimationFrame(render);
@@ -535,21 +697,22 @@ export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollPr
     return () => {
       stopped = true; cancelAnimationFrame(frame); observer.disconnect(); visibilityObserver.disconnect(); document.removeEventListener("visibilitychange", resume); motion.removeEventListener("change", motionChange);
       canvas.removeEventListener("keydown", keydown); canvas.removeEventListener("focus", focus); canvas.removeEventListener("blur", blur);
-      canvas.removeEventListener("pointerdown", pointerDown); canvas.removeEventListener("pointerup", pointerUp); canvas.removeEventListener("webglcontextlost", contextLost);
+      canvas.removeEventListener("pointerdown", pointerDown); canvas.removeEventListener("pointermove", pointerMove); canvas.removeEventListener("pointercancel", pointerCancel); canvas.removeEventListener("pointerup", pointerUp); canvas.removeEventListener("webglcontextlost", contextLost);
+      controls.removeEventListener("start", clearFocusMotion);
       controls.dispose(); geometries.forEach((item) => item.dispose()); materials.forEach((item) => item.dispose()); textures.forEach((item) => item.dispose()); // Release the browser context as well as GPU objects during route changes/HMR.
       renderer.dispose(); renderer.forceContextLoss(); canvas.remove(); command.current = () => {}; buildCommand.current = () => {};
     };
   }, [generation]);
 
-  return <div className={`hm3d ${night ? "hm3d-night" : ""} ${twilight ? "hm3d-twilight" : ""} ${construction ? "hm3d-constructing" : ""}`}>
-    <div className="hm3d-topline"><span>YOUR LITTLE WORLD · REAL 3D</span><span>{twilight ? hour % 24 < 12 ? "☼ DAWN" : "◐ DUSK" : night ? "☾ NIGHT" : "☀ DAY"}</span></div>
+  return <div className={`hm3d ${night ? "hm3d-night" : ""} ${twilight ? "hm3d-twilight" : ""} ${construction ? "hm3d-constructing" : ""} ${presentation ? "hm3d-presentation" : ""}`}>
+    {!presentation && <div className="hm3d-topline"><span>YOUR LITTLE WORLD · REAL 3D</span><span>{twilight ? hour % 24 < 12 ? "☼ DAWN" : "◐ DUSK" : night ? "☾ NIGHT" : "☀ DAY"}</span></div>}
     <div className="hm3d-stage" ref={host} />
     {unavailable && <div className="hm3d-fallback" role="status"><strong>The 3D view is taking a break.</strong><p>WebGL is unavailable or its context was lost. Appliance selection and the simulated planner still work.</p><button type="button" onClick={() => { setUnavailable(false); setGeneration((value) => value + 1); }}>Retry 3D view</button></div>}
-    <div className="hm3d-toolbar" aria-label="3D view controls">
+    {!presentation && <div className="hm3d-toolbar" aria-label="3D view controls">
       <div className="hm3d-camera"><button type="button" aria-label="Rotate view left" onClick={() => command.current("left")}>↶</button><button type="button" aria-label="Rotate view right" onClick={() => command.current("right")}>↷</button><button type="button" aria-label="Zoom in" onClick={() => command.current("in")}>+</button><button type="button" aria-label="Zoom out" onClick={() => command.current("out")}>−</button><button type="button" onClick={() => command.current("reset")} aria-label="Reset camera view">Reset</button></div>
       {construction && <div className="hm3d-build-controls" aria-label="Household construction controls"><button type="button" disabled={finishBuildDisabled} onClick={() => { buildCommand.current("skip"); onFinishBuild?.(); }}>{finishBuildLabel ?? (onFinishBuild ? "Finish build" : "Skip animation")}</button><button type="button" onClick={() => buildCommand.current("replay")}>Replay build</button></div>}
       <span className="hm3d-hint">{focused ? "+/− to zoom · Esc to release" : "Drag to turn · Scroll through the day"}</span>
-    </div>
-    <p className="hm3d-access sr-only">Keyboard: focus the scene, then arrows to orbit, + / − to zoom, Home to reset. Motion follows the demo clock, never real devices.</p>
+    </div>}
+    {!presentation && <p className="hm3d-access sr-only">Keyboard: focus the scene, then arrows to orbit, + / − to zoom, Home to reset. Motion follows the demo clock, never real devices.</p>}
   </div>;
 }

@@ -27,7 +27,7 @@ export type DemoCommandSession = {
   nextProposalId: number;
 };
 export type DemoCommandResult = { session: DemoCommandSession; reply: string };
-const START_HOUR = 18;
+function startHour(scenario: DemoScenario) { return Math.min(18, ...scenario.requests.map(row => row.startWindow.earliestHour)); }
 const STORAGE_LIMIT = 100_000;
 const modes: readonly OptimizationMode[] = ["cost", "carbon", "balanced"];
 const names = { evie: "Evie", bubbles: "Bubbles", chill: "Chill" };
@@ -72,7 +72,7 @@ function validateRequests(value: unknown, scenario: DemoScenario): SchedulingReq
     const constraints = row.appliance.constraints;
     const deadlineKey = original.appliance.kind === "ev" ? "readyByHour" : "finishByHour";
     const deadline = constraints[deadlineKey];
-    if (!wholeHour(deadline) || !wholeHour(row.startWindow.earliestHour, 47) || !wholeHour(row.startWindow.latestHour, 47) || row.startWindow.earliestHour < START_HOUR) return null;
+    if (!wholeHour(deadline) || !wholeHour(row.startWindow.earliestHour, 47) || !wholeHour(row.startWindow.latestHour, 47) || row.startWindow.earliestHour < startHour(scenario)) return null;
     const copy = structuredClone(original);
     if (copy.appliance.kind === "ev") copy.appliance.constraints.readyByHour = deadline;
     else copy.appliance.constraints.finishByHour = deadline;
@@ -96,9 +96,9 @@ function validatedProposal(value: unknown, scenario: DemoScenario, requireFeasib
 function current(session: DemoCommandSession, scenario: DemoScenario): boolean {
   if (!session || session.version !== 1 || session.contextFingerprint !== demoCommandContextFingerprint(scenario) ||
       !modes.includes(session.mode) || !Number.isSafeInteger(session.nextProposalId) || session.nextProposalId < 1 || session.nextProposalId > 999_999_999 ||
-      !Number.isFinite(session.executionHour) || session.executionHour < START_HOUR || session.executionHour > 48 ||
+      !Number.isFinite(session.executionHour) || session.executionHour < startHour(scenario) || session.executionHour > 48 ||
       !validateRequests(session.requests, scenario) || !["idle", "running", "paused", "completed"].includes(session.status)) return false;
-  if (!session.approved) return session.status === "idle" && session.executionHour === START_HOUR &&
+  if (!session.approved) return session.status === "idle" && session.executionHour === startHour(scenario) &&
     (!session.pending || !!validatedProposal(session.pending, scenario, false));
   const approved = validatedProposal(session.approved, scenario, true);
   if (!approved || session.pending || session.status === "idle" || session.mode !== approved.mode ||
@@ -118,10 +118,10 @@ function invalidated(scenario: DemoScenario, previous: DemoCommandSession): Demo
 export function createDemoCommandSession(scenario: DemoScenario, mode: OptimizationMode = scenario.profile.planningMode ?? "cost"): DemoCommandSession {
   if (!modes.includes(mode)) throw new RangeError("Invalid command planning objective.");
   const requests = structuredClone(scenario.requests);
-  requests.forEach(row => { row.startWindow.earliestHour = Math.max(START_HOUR, row.startWindow.earliestHour); });
+  requests.forEach(row => { row.startWindow.earliestHour = Math.max(startHour(scenario), row.startWindow.earliestHour); });
   return { version: 1, contextFingerprint: demoCommandContextFingerprint(scenario), requests,
     mode, pending: null, approved: null,
-    executionHour: START_HOUR, status: "idle", nextProposalId: 1 };
+    executionHour: startHour(scenario), status: "idle", nextProposalId: 1 };
 }
 
 /** Explicit new-day action keeps proposal IDs increasing so an old approval button cannot match a new preview. */
@@ -179,7 +179,7 @@ export function requestDemoCommand(session: DemoCommandSession, scenario: DemoSc
   for (const change of intent.changes) {
     const row = requests.find(item => item.appliance.id === change.applianceId);
     if (!row) return { session, reply: "That flexible appliance is not on the selected team." };
-    if (change.earliestHour !== undefined) row.startWindow.earliestHour = Math.max(START_HOUR, change.earliestHour);
+    if (change.earliestHour !== undefined) row.startWindow.earliestHour = Math.max(startHour(scenario), change.earliestHour);
     if (change.latestHour !== undefined) row.startWindow.latestHour = change.latestHour;
     if (change.deadlineHour !== undefined) {
       if (row.appliance.kind === "ev") row.appliance.constraints.readyByHour = change.deadlineHour;
@@ -189,8 +189,8 @@ export function requestDemoCommand(session: DemoCommandSession, scenario: DemoSc
   }
   if (session.nextProposalId >= 999_999_999) return { session, reply: "Reset the demo day before creating more proposals." };
   const candidate = proposal(scenario, requests, intent.mode ?? session.pending?.mode ?? session.mode, `demo-proposal-${session.nextProposalId}`);
-  const notes = [...intent.notes, ...(intent.changes.some(change => change.earliestHour !== undefined && change.earliestHour < START_HOUR)
-    ? ["This simulated day begins at 18:00; earlier starts are unavailable and the original physical availability still applies."] : [])];
+  const notes = [...intent.notes, ...(intent.changes.some(change => change.earliestHour !== undefined && change.earliestHour < startHour(scenario))
+    ? [`This simulated day begins at ${formatDemoHour(startHour(scenario))}; earlier starts are unavailable and the original physical availability still applies.`] : [])];
   return { session: { ...session, pending: candidate, nextProposalId: session.nextProposalId + 1 }, reply: `${describePlan(candidate)}${notes.length ? ` ${notes.join(" ")}` : ""}` };
 }
 
@@ -201,7 +201,7 @@ export function approveDemoCommand(session: DemoCommandSession, scenario: DemoSc
   const approved = validatedProposal(session.pending, scenario, true);
   if (!approved) return { session: { ...session, pending: null }, reply: "This proposal is infeasible or changed since calculation. Request a fresh preview; nothing was started." };
   return { session: { ...session, requests: structuredClone(approved.requests), mode: approved.mode, pending: null, approved,
-    executionHour: START_HOUR, status: "running" }, reply: `Approved for simulated execution starting at ${formatDemoHour(START_HOUR)}. Queued appliances begin at their computed schedule times. No real device is controlled.` };
+    executionHour: startHour(scenario), status: "running" }, reply: `Approved for simulated execution starting at ${formatDemoHour(startHour(scenario))}. Queued appliances begin at their computed schedule times. No real device is controlled.` };
 }
 
 export function rejectDemoCommand(session: DemoCommandSession, scenario: DemoScenario): DemoCommandResult {
@@ -227,7 +227,7 @@ export function setDemoExecutionPaused(session: DemoCommandSession, scenario: De
 }
 
 export function getDemoExecutionStats(session: DemoCommandSession, scenario: DemoScenario): SimulationStats {
-  return current(session, scenario) && session.approved ? getSimulationStats(session.approved.plan.schedules, session.executionHour) : getSimulationStats([], START_HOUR);
+  return current(session, scenario) && session.approved ? getSimulationStats(session.approved.plan.schedules, session.executionHour) : getSimulationStats([], startHour(scenario));
 }
 
 /** Only an approved parameter snapshot is persisted. No transcript, pending approval, cached totals or auto-run flag. */
@@ -244,7 +244,7 @@ export function restoreDemoCommandSession(raw: string | null, scenario: DemoScen
     const data: unknown = JSON.parse(raw);
     if (!record(data) || data.version !== 1 || data.contextFingerprint !== demoCommandContextFingerprint(scenario) ||
         !modes.includes(data.mode as OptimizationMode) || typeof data.executionHour !== "number" || !Number.isFinite(data.executionHour) ||
-        data.executionHour < START_HOUR || data.executionHour > 48) return null;
+        data.executionHour < startHour(scenario) || data.executionHour > 48) return null;
     const requests = validateRequests(data.requests, scenario);
     if (!requests?.length) return null;
     const approved = proposal(scenario, requests, data.mode as OptimizationMode, "demo-proposal-1");

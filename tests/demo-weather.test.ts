@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { DEMO_REGIONS, getDemoRegion, type RegionId } from "../src/data/demo-regions";
-import { createSyntheticWeather, fetchDemoWeather, isDemoWeather, normalizeOpenMeteoWeather } from "../src/domain/demo-weather";
+import { copyDemoWeather, createSyntheticWeather, fetchDemoWeather, isDemoWeather, isWeatherSnapshotFresh, normalizeOpenMeteoWeather } from "../src/domain/demo-weather";
 
 function apiResponse(regionId: RegionId = "california") {
   const region = getDemoRegion(regionId);
@@ -82,7 +82,7 @@ test("external responses reject unit mismatches, wrong cities/timezones, malform
 test("optional fetch sends only public city parameters and normalizes a successful response", async () => {
   let requested: URL | undefined;
   let settings: RequestInit | undefined;
-  const result = await fetchDemoWeather("tokyo", { fetcher: async (input, init) => {
+  const result = await fetchDemoWeather("tokyo", { now: () => Date.parse("2026-10-24T03:15:00.000Z"), fetcher: async (input, init) => {
     requested = new URL(String(input)); settings = init;
     return Response.json(apiResponse("tokyo"));
   } });
@@ -91,7 +91,7 @@ test("optional fetch sends only public city parameters and normalizes a successf
   assert.equal(requested?.pathname, "/v1/forecast");
   assert.equal(requested?.searchParams.get("latitude"), String(getDemoRegion("tokyo").latitude));
   assert.equal(requested?.searchParams.get("timezone"), "Asia/Tokyo");
-  assert.equal(requested?.searchParams.get("forecast_days"), "1");
+  assert.equal(requested?.searchParams.get("forecast_days"), "2");
   assert.equal(requested?.searchParams.get("temperature_unit"), "celsius");
   assert.equal(settings?.credentials, "omit");
   assert.equal(settings?.referrerPolicy, "no-referrer");
@@ -144,4 +144,67 @@ test("caller cancellation avoids unnecessary calls and aborts in-flight requests
   assert.equal(canceled.source, "synthetic");
   assert.match(canceled.fallbackReason!, /canceled/);
   for (const timeoutMs of [0, 0.5, -1, NaN, Infinity, 15001]) await assert.rejects(() => fetchDemoWeather("oslo", { timeoutMs }), RangeError);
+});
+
+function twoDays() {
+  const payload = apiResponse();
+  for (let hour = 0; hour < 24; hour++) {
+    payload.hourly.time.push(`2026-10-25T${String(hour).padStart(2, "0")}:00`);
+    payload.hourly.temperature_2m.push(8 + hour / 10);
+    payload.hourly.relative_humidity_2m.push(72);
+    payload.hourly.weather_code.push(61);
+  }
+  return payload;
+}
+
+test("two-day forecasts preserve tomorrow's distinct conditions instead of repeating today", () => {
+  const payload = twoDays();
+  const result = normalizeOpenMeteoWeather(payload, "california");
+  assert.ok(result?.nextDayHourly); assert.equal(result.hourly.length, 24); assert.equal(result.nextDayHourly.length, 24);
+  assert.equal(result.hourly[0].temperatureC, 15); assert.equal(result.nextDayHourly[0].temperatureC, 8);
+  assert.equal(result.nextDayHourly[23].time, "2026-10-25T23:00"); assert.equal(result.nextDayHourly[0].weatherCode, 61);
+  const changed = structuredClone(payload); changed.hourly.time[24] = "2026-10-24T00:00";
+  assert.equal(normalizeOpenMeteoWeather(changed, "california"), null);
+  for (const bad of [[], result.nextDayHourly.slice(1), [...result.nextDayHourly.slice(0, 23), undefined]]) assert.equal(isDemoWeather({ ...result, nextDayHourly: bad }, "california"), false);
+});
+
+test("snapshot copying drops unknown fields, preserves provenance and refuses unsafe source URLs", () => {
+  const normalized = normalizeOpenMeteoWeather(twoDays(), "california")!;
+  const input = { ...normalized, fetchedAt: "2026-10-24T19:15:00.000Z", secret: "drop", hourly: normalized.hourly.map(row => ({ ...row, unexpected: 123 })) };
+  const copy = copyDemoWeather(input, "california")!;
+  assert.equal("secret" in copy, false); assert.equal("unexpected" in copy.hourly[0], false);
+  copy.nextDayHourly![0].temperatureC = 40; assert.equal(normalized.nextDayHourly![0].temperatureC, 8);
+  assert.equal(copyDemoWeather({ ...input, sourceUrl: "javascript:alert(1)" }, "california"), null);
+  assert.equal(copyDemoWeather({ ...input, fetchedAt: "2026-02-30T19:15:00.000Z" }, "california"), null);
+});
+
+test("freshness checks source-local current time and bounded UTC retrieval age", async () => {
+  const now = Date.parse("2026-10-24T19:15:00.000Z");
+  const weather = { ...normalizeOpenMeteoWeather(twoDays(), "california")!, fetchedAt: new Date(now).toISOString() };
+  assert.equal(isWeatherSnapshotFresh(weather, now), true);
+  assert.equal(isWeatherSnapshotFresh(weather, now + 31 * 60000), false);
+  assert.equal(isWeatherSnapshotFresh(weather, now - 2 * 60000), false);
+  assert.equal(isWeatherSnapshotFresh({ ...weather, currentTime: "2026-10-24T04:15" }, now), false);
+  assert.equal(isWeatherSnapshotFresh(createSyntheticWeather("california"), now), false);
+  assert.equal(isWeatherSnapshotFresh({ ...weather, fetchedAt: undefined }, now), false);
+  const fetched = await fetchDemoWeather("california", { now: () => now, fetcher: async () => Response.json(twoDays()) });
+  assert.equal(fetched.fetchedAt, "2026-10-24T19:15:00.000Z"); assert.equal(fetched.nextDayHourly?.length, 24);
+  const stale = await fetchDemoWeather("california", { now: () => now + 86400000, fetcher: async () => Response.json(twoDays()) });
+  assert.equal(stale.source, "synthetic"); assert.match(stale.fallbackReason!, /unavailable or invalid/);
+});
+
+test("arbitrary selected location uses its coordinates/timezone and refuses a different city's data", async () => {
+  const location = { id: 2988507, name: "Paris", admin1: "Île-de-France", country: "France", countryCode: "FR", latitude: 48.85341, longitude: 2.3488, timezone: "Europe/Paris" };
+  const payload = { ...apiResponse(), latitude: location.latitude, longitude: location.longitude, timezone: location.timezone };
+  payload.current.time = "2026-10-24T21:15";
+  let target: URL | undefined;
+  const result = await fetchDemoWeather("bangkok", { location, now: () => Date.parse("2026-10-24T19:15:00.000Z"), fetcher: async url => { target = new URL(String(url)); return Response.json(payload); } });
+  assert.equal(result.regionId, "bangkok"); assert.equal(result.location?.id, location.id); assert.equal(result.timezone, location.timezone);
+  assert.equal(target?.searchParams.get("latitude"), String(location.latitude)); assert.equal(target?.searchParams.get("timezone"), "Europe/Paris");
+  assert.equal(isDemoWeather(result, "bangkok"), true); assert.deepEqual(copyDemoWeather(result, "bangkok")?.location, location);
+  assert.equal(normalizeOpenMeteoWeather(apiResponse("bangkok"), "bangkok", location), null);
+  for (const fetcher of [(async () => { throw Error("offline"); }) as typeof fetch, (async () => Response.json(apiResponse("bangkok"))) as typeof fetch]) await assert.rejects(fetchDemoWeather("bangkok", { location, fetcher }), /Forecast unavailable/);
+  const controller = new AbortController(); controller.abort();
+  await assert.rejects(fetchDemoWeather("bangkok", { location, signal: controller.signal }), /Forecast unavailable/);
+  await assert.rejects(fetchDemoWeather("bangkok", { location, timeoutMs: 5, fetcher: async () => new Promise<Response>(() => {}) }), /Forecast unavailable/);
 });

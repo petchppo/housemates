@@ -1,0 +1,31 @@
+.cct{--cct-ink:#263c32;--cct-muted:#526154;color:var(--cct-ink);background:#f7f7ed;border:1px solid #b7c5ad;border-radius:18px;padding:clamp(14px,3vw,26px);min-width:0;max-width:100%}
+.cct .cct-eyebrow{font-size:11px;letter-spacing:.08em;font-weight:750;color:var(--cct-muted);margin:0 0 10px}
+.cct h2{font-size:clamp(22px,4vw,30px);line-height:1.2;margin:0 0 12px;letter-spacing:-.025em}
+.cct-intro,.cct-key,.cct-disclosure,.cct-locked{font-size:13px;line-height:1.6;margin:10px 0;color:var(--cct-muted)}
+.cct-plot{width:100%;max-width:680px;margin:16px auto 0;background:#fffef8;border-radius:12px}
+.cct-plot svg{display:block;width:100%;height:auto;overflow:visible}
+.cct-grid line{stroke:#d9dfd1;stroke-width:1}
+.cct-grid text{font-size:12px;fill:#46594b;font-variant-numeric:tabular-nums}
+.cct-axis{stroke:#6b7d6b;stroke-width:1.5;fill:none}
+.cct-axis-title{font-size:13px;fill:#2c4234;font-weight:650}
+.cct-point circle{fill:#7d8972;stroke:#fffef8;stroke-width:2}
+.cct-point line{stroke:#65755f;stroke-width:1}
+.cct-point text{font-size:13px;fill:#263c32;font-weight:750;paint-order:stroke;stroke:#fffef8;stroke-width:4;stroke-linejoin:round}
+.cct-point-selected circle{fill:#356a49;stroke:#233d2c;stroke-width:2}
+.cct-table-wrap{max-width:100%;margin-top:18px}
+.cct table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px;line-height:1.5;text-align:left}
+.cct caption{text-align:left;font-size:13px;line-height:1.6;color:var(--cct-muted);margin-bottom:12px}
+.cct th,.cct td{padding:12px 8px;border-bottom:1px solid #d4ddcb;vertical-align:top;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.cct thead th{font-size:12px;color:#475c49;font-weight:650}
+.cct th:first-child{width:44%}
+.cct tbody th{font-weight:650}
+.cct small{display:block;font-size:11px;font-weight:450;line-height:1.5;margin-top:5px;color:var(--cct-muted)}
+.cct button{display:block;min-height:44px;width:100%;max-width:185px;border:1px solid #657e60;border-radius:7px;background:#fffef8;padding:7px 9px;margin-top:10px;font:inherit;font-size:12px;font-weight:650;color:#264b31;cursor:pointer;text-align:left;line-height:1.4}
+.cct button:hover:not(:disabled){background:#e6eedc}
+.cct button:focus-visible{outline:3px solid #264b31;outline-offset:3px}
+.cct button:disabled{color:#64705f;border-color:#bcc6b3;background:#f0f2e9;cursor:default}
+.cct-current{background:#eaf0e1}
+.cct-issues{padding:12px 12px 12px 28px;background:#fff2d5;border-radius:8px;color:#694916;font-size:13px;line-height:1.6}
+.cct-locked{font-weight:650;color:#694916}
+@media(max-width:420px){.cct th,.cct td{padding:10px 5px}.cct table{font-size:12px}.cct button{font-size:11px;padding:7px 6px}.cct-key{font-size:12px}}
+@media(max-width:600px){.cct-grid text{font-size:28px}.cct-axis-title{font-size:28px}.cct-point text{font-size:28px}}

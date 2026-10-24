@@ -4,8 +4,10 @@ import { defaultSchedulingRequests } from "../data/scheduling";
 import type { ApplianceId } from "./appliances";
 import { estimateUsage, type HourlyEnergy } from "./energy";
 import { optimizeHousehold, sumEnergy, type HouseholdPlan, type OptimizationMode, type SchedulingRequest } from "./scheduling";
-import { createSyntheticWeather, isDemoWeather, type DemoWeather } from "./demo-weather";
+import { copyDemoWeather, createSyntheticWeather, isDemoWeather, type DemoWeather } from "./demo-weather";
 import { buildDemoGridProfile, type DemoGridHour } from "../data/demo-grid";
+import { validateApplimonInventory, type ApplimonDevice } from "./applimon-catalog";
+import { parseWeatherLocation, weatherLocationsMatch, type WeatherLocation } from "./weather-location";
 import { buildDemoAcActivity, demoCoolingOccupancyFactor, type DemoAcActivity } from "./demo-activity";
 
 export type DemoProfile = {
@@ -14,11 +16,18 @@ export type DemoProfile = {
   residenceType: ResidenceType;
   applianceIds: ApplianceId[];
   weatherMode: "synthetic" | "live";
+  weatherPreferenceExplicit?: boolean;
+  /** Public forecast location, independent of the authored scene/energy region. */
+  weatherLocation?: WeatherLocation;
   /** Optional synthetic what-if controls; no external weather request is implied. */
   weatherOffsetC?: number;
   weatherCode?: number;
   /** Optional saved dashboard choice; older demo profiles default to cost-first. */
   planningMode?: OptimizationMode;
+  /** Reviewed appliance passports; legacy household profiles remain compatible. */
+  applimons?: ApplimonDevice[];
+  /** A validated forecast snapshot, never a claim of indoor measurements. */
+  forecast?: DemoWeather;
 };
 export const DEFAULT_DEMO_PROFILE: DemoProfile = {
   version: 1, regionId: "california", residenceType: "detached", applianceIds: [], weatherMode: "synthetic",
@@ -40,6 +49,7 @@ export type BackgroundDemand = {
   costUsd: number;
   carbonGrams: number;
   hourly: BackgroundDemandHour[];
+  nextDayHourly?: BackgroundDemandHour[];
   assumptions: string[];
 };
 export type DemoScenario = {
@@ -57,7 +67,7 @@ export type DemoScenario = {
 
 const RESIDENCES: readonly ResidenceType[] = ["apartment", "townhouse", "detached"];
 const APPLIANCES: readonly ApplianceId[] = ["evie", "bubbles", "chill"];
-const DEMO_STORAGE_LIMIT = 2048;
+const DEMO_STORAGE_LIMIT = 64_000;
 const DEMAND_COEFFICIENT: Record<ResidenceType, number> = { apartment: 0.035, townhouse: 0.06, detached: 0.09 };
 
 /** Rounded minute display on the fictional timeline; hour 48 is the Day 3 boundary, not hour 24. */
@@ -77,6 +87,7 @@ export function validateDemoProfile(value: unknown): DemoProfile | null {
       source.version !== 1 || !DEMO_REGIONS.some(region => region.id === source.regionId) ||
       !RESIDENCES.includes(source.residenceType as ResidenceType) ||
       (source.weatherMode !== "synthetic" && source.weatherMode !== "live") ||
+      (source.weatherPreferenceExplicit !== undefined && typeof source.weatherPreferenceExplicit !== "boolean") ||
       (source.planningMode !== undefined && !["cost", "carbon", "balanced"].includes(source.planningMode as string)) ||
       (source.weatherOffsetC !== undefined && (typeof source.weatherOffsetC !== "number" ||
         !Number.isInteger(source.weatherOffsetC) || source.weatherOffsetC < -10 || source.weatherOffsetC > 10)) ||
@@ -84,11 +95,21 @@ export function validateDemoProfile(value: unknown): DemoProfile | null {
       !Array.isArray(source.applianceIds) || source.applianceIds.length > 3 ||
       !Array.from(source.applianceIds).every(id => APPLIANCES.includes(id)) ||
       new Set(source.applianceIds).size !== source.applianceIds.length) return null;
+  const location = source.weatherLocation === undefined ? undefined : parseWeatherLocation(source.weatherLocation);
+  if (location === null) return null;
+  const inventory = source.applimons === undefined ? undefined : validateApplimonInventory(source.applimons);
+  if (inventory === null || (source.forecast !== undefined && !isDemoWeather(source.forecast, source.regionId as RegionId))) return null;
+  const forecast = source.forecast === undefined ? undefined : copyDemoWeather(source.forecast, source.regionId as RegionId);
+  if (forecast && !weatherLocationsMatch(location, forecast.location)) return null;
   return { version: 1, regionId: source.regionId as RegionId, residenceType: source.residenceType as ResidenceType,
     applianceIds: APPLIANCES.filter(id => (source.applianceIds as unknown[]).includes(id)), weatherMode: source.weatherMode,
+    ...(source.weatherPreferenceExplicit !== undefined ? { weatherPreferenceExplicit: source.weatherPreferenceExplicit as boolean } : {}),
     ...(source.weatherOffsetC !== undefined ? { weatherOffsetC: source.weatherOffsetC as number } : {}),
     ...(source.weatherCode !== undefined ? { weatherCode: source.weatherCode as number } : {}),
-    ...(source.planningMode !== undefined ? { planningMode: source.planningMode as OptimizationMode } : {}) };
+    ...(source.planningMode !== undefined ? { planningMode: source.planningMode as OptimizationMode } : {}),
+    ...(inventory ? { applimons: inventory } : {}),
+    ...(location ? { weatherLocation: location } : {}),
+    ...(forecast ? { forecast } : {}) };
 }
 
 export function parseDemoProfile(raw: string | null): DemoProfile | null {
@@ -96,10 +117,11 @@ export function parseDemoProfile(raw: string | null): DemoProfile | null {
   try { return validateDemoProfile(JSON.parse(raw)); } catch { return null; }
 }
 
-/** Pure synthetic-only weather, including saved what-if choices; never initiates a network request. */
+/** Resolve a validated forecast snapshot or synthetic what-if; never initiates a network request. */
 export function buildDemoWeather(profile: DemoProfile): DemoWeather {
   const validated = validateDemoProfile(profile);
   if (!validated) throw new RangeError("Invalid demo profile for synthetic weather.");
+  if (validated.weatherMode === "live" && validated.forecast) return structuredClone(validated.forecast);
   const weather = createSyntheticWeather(validated.regionId);
   const offset = validated.weatherOffsetC ?? 0;
   if (validated.weatherOffsetC === undefined && validated.weatherCode === undefined) return weather;
@@ -132,16 +154,19 @@ export function calculateBackgroundDemand(residenceType: ResidenceType, weather:
     throw new RangeError("Background demand requires a complete finite 24-hour energy profile.");
   }
   const coefficient = DEMAND_COEFFICIENT[residenceType];
-  const hourly = weather.hourly.map((row, hour): BackgroundDemandHour => {
+  const mapHours = (rows: DemoWeather["hourly"], offset = 0) => rows.map((row, index): BackgroundDemandHour => {
+    const hour = index % 24;
     const heatingKwh = Math.max(0, 18 - row.temperatureC) * coefficient;
     const coolingKwh = Math.max(0, row.temperatureC - 24) * coefficient * (1 + Math.max(0, row.humidityPercent - 60) * 0.004) * demoCoolingOccupancyFactor(hour);
     const energyKwh = heatingKwh + coolingKwh;
-    return { hour, temperatureC: row.temperatureC, heatingKwh, coolingKwh, energyKwh, ...estimateUsage(energyKwh, energyProfile[hour]) };
+    return { hour: index + offset, temperatureC: row.temperatureC, heatingKwh, coolingKwh, energyKwh, ...estimateUsage(energyKwh, energyProfile[hour]) };
   });
+  const hourly = mapHours(weather.hourly);
+  const nextDayHourly = weather.nextDayHourly ? mapHours(weather.nextDayHourly, 24) : undefined;
   const totals = sumEnergy(hourly);
   if (![totals.energyKwh, totals.costUsd, totals.carbonGrams].every(Number.isFinite)) throw new RangeError("Background demand totals exceed the numeric range.");
   return { label: "Illustrative background heating/cooling demand — separate from appliance savings", ...totals,
-    heatingKwh: hourly.reduce((sum, row) => sum + row.heatingKwh, 0), coolingKwh: hourly.reduce((sum, row) => sum + row.coolingKwh, 0), hourly,
+    heatingKwh: hourly.reduce((sum, row) => sum + row.heatingKwh, 0), coolingKwh: hourly.reduce((sum, row) => sum + row.coolingKwh, 0), hourly, ...(nextDayHourly ? { nextDayHourly } : {}),
     assumptions: [
       "Illustrative electrical demand, not a calibrated building/thermal model, measured usage, or a thermostat recommendation.",
       `The ${residenceType} example uses ${coefficient} kW per degree outside an illustrative 18–24°C neutral band.`,
@@ -157,12 +182,20 @@ export function buildDemoScenario(profile: DemoProfile, suppliedWeather?: DemoWe
   const objective = mode === undefined ? validated?.planningMode ?? "cost" : mode;
   if (!validated || !["cost", "carbon", "balanced"].includes(objective)) throw new RangeError("Invalid demo profile or optimization objective.");
   const weather = suppliedWeather ?? buildDemoWeather(validated);
-  if (!isDemoWeather(weather, validated.regionId)) throw new RangeError("Weather does not match the selected region or contains invalid values.");
+  if (!isDemoWeather(weather, validated.regionId) || (weather.source === "live" && !weatherLocationsMatch(validated.weatherLocation, weather.location))) throw new RangeError("Weather does not match the selected region/location or contains invalid values.");
   const region = getDemoRegion(validated.regionId);
   const energyProfile = buildRegionEnergyProfile(region.id);
   const gridProfile = buildDemoGridProfile(region.id);
   const requests = structuredClone(defaultSchedulingRequests.filter(request => validated.applianceIds.includes(request.appliance.id)));
-  requests.forEach(request => { request.baselineStartHour = request.appliance.id === "evie" ? 18 : 20; });
+  requests.forEach(request => {
+    request.baselineStartHour = request.appliance.id === "evie" ? 18 : 20;
+    const device = validated.applimons?.find(item => item.id === request.appliance.id);
+    if (!device) return;
+    request.baselineStartHour = device.baselineStartHour;
+    request.startWindow = { earliestHour: device.earliestStartHour, latestHour: device.latestStartHour };
+    if (request.appliance.kind === "ev") request.appliance.constraints = { energyNeededKwh: device.energyKwh, maxPowerKw: device.ratedPowerW / 1000, availableFromHour: device.earliestStartHour, readyByHour: device.deadlineHour };
+    else request.appliance.constraints = { interruptible: false, cycleHours: device.durationHours, cycleEnergyKwh: device.energyKwh, earliestStartHour: device.earliestStartHour, finishByHour: device.deadlineHour };
+  });
   const plan = requests.length ? optimizeHousehold(requests, energyProfile, objective) : null;
   const backgroundDemand = calculateBackgroundDemand(validated.residenceType, weather, energyProfile);
   const acActivity = buildDemoAcActivity(backgroundDemand, energyProfile, validated.applianceIds.includes("chill"));
@@ -172,12 +205,13 @@ export function buildDemoScenario(profile: DemoProfile, suppliedWeather?: DemoWe
       "California shows a pronounced solar-driven duck curve. Other city examples use distinct authored solar/daytime/evening shapes; these are not claims about actual regional daily profiles.",
       `Synthetic USD prices blend 60% existing demonstration rates with 40% an indexed net-load/solar/evening signal, then apply factor ${region.priceFactor}. Carbon blends 35% existing grid intensity with 65% a separate illustrative supply signal, then factor ${region.carbonFactor}.`,
       "Price and carbon signals are not interchangeable: a separate fictional early-morning clean-supply contribution permits genuine cost/carbon tradeoffs. They are not an economic dispatch model or marginal emissions estimate.",
-      "Fixed original schedules represent an example workday: Evie starts at 18:00 after arrival; Bubbles starts at 20:00 after dinner. These are illustrative household choices, not universal or inferred habits. Available windows remain 18:00–07:00 and 20:00–07:00 respectively; no unavailable midday slot is proposed.",
+      validated.applimons?.some(device=>device.id==="evie"||device.id==="bubbles") ? "Reviewed core passports set the original starts, energy requirements and available windows. The baseline stays fixed when comparing new schedules." : "Fixed original schedules represent an example workday: Evie starts at 18:00 after arrival; Bubbles starts at 20:00 after dinner. These are illustrative household choices, not universal or inferred habits. Available windows remain 18:00–07:00 and 20:00–07:00 respectively; no unavailable midday slot is proposed.",
       "All monetary values are USD demonstration amounts; no currency conversion, live tariffs, or actual regional carbon statistics are used.",
       "The synthetic energy day repeats across the existing 48-hour planner; calendar/DST effects and weather-driven tariff changes are not modeled.",
-      "Weather describes a public city location, never indoor conditions or real appliance telemetry. Synthetic presets use a fictional fixed date.",
+      weather.source === "live" ? `Open-Meteo city forecast snapshot at ${weather.currentTime} (${weather.timezone}) informs hourly building estimates; rates and appliance activity remain modeled.` : "Weather is a labeled synthetic preset or fallback, never indoor conditions or real appliance telemetry.",
       "Synthetic temperature offsets apply uniformly to the 24-hour preset; humidity is unchanged. Weather-condition choices change scenery, not precipitation-related energy demand.",
-      "Only selected Evie/Bubbles schedules enter the optimizer. Chill stays protected; background heating/cooling remains separate and is never counted as savings.",
+      "This core plan contains selected Evie/Bubbles only. Additional reviewed Applimon jobs are planned separately and are not counted twice. Chill and background heating/cooling stay outside optimized savings.",
+      ...(validated.applimons?.length ? ["Reviewed appliance passports override the authored core power, task energy, duration and windows. Nameplate ratings are not measured cycle energy."] : []),
       ...(!requests.length ? ["No flexible appliances are selected, so there is no optimized plan or claimed saving."] : []),
     ] };
 }

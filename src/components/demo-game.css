@@ -1,0 +1,185 @@
+/* The demo is a playable screen: world, choice menu, dialogue. */
+html:has(.demo-game-shell),body:has(.demo-game-shell) { height:100%;overflow:hidden;overscroll-behavior:none; }
+.demo-game-shell {
+  --game-ink:#233e38; --game-green:#507b65; --game-paper:#fff9e5;
+  --demo-ink:var(--game-ink); --demo-muted:#52685d;
+  height:100dvh; min-height:0; max-width:none; padding:0 22px;
+  display:flex; flex-direction:column; overflow:hidden;
+  background:#e7ecdb; color:var(--game-ink);
+  background-image:radial-gradient(#a3b69850 .7px,transparent .7px); background-size:6px 6px;
+}
+.demo-game-shell [hidden] { display:none!important; }
+.demo-game-shell .demo-header { flex:0 0 55px; height:55px; border:0; gap:12px; }
+.demo-game-shell .demo-brand { font-size:23px; letter-spacing:-1px; color:#294d3f; }
+.demo-game-shell .demo-brand>span:first-child { width:27px;height:28px;border:2px solid #395e4b;border-radius:0;background:#d6dfb7;font-size:23px; }
+.demo-game-shell .demo-edition { color:#556b5e;font-size:9px; }
+.demo-game-shell .demo-exit { color:#3d594e;font:11px monospace; }
+.demo-game-shell .demo-progress { flex:0 0 37px; margin:0 0 8px; gap:0; background:#365548; border:2px solid #2b483d; }
+.demo-game-shell .demo-progress button { min-height:33px;padding:4px 12px; flex-direction:row; gap:8px; border:0;border-radius:0;box-shadow:none;background:transparent;color:#dce8d5; font:11px monospace; }
+.demo-game-shell .demo-progress button+button { border-left:1px solid #69816e; }
+.demo-game-shell .demo-progress button span { background:transparent;color:inherit;width:auto;height:auto;font:11px monospace; }
+.demo-game-shell .demo-progress button[aria-current=step] { background:#e2edbb;color:#2b4e3d;box-shadow:inset 0 -3px #a7bf77; }
+.demo-game-shell .demo-progress button:disabled { color:#a4b9a6; }
+.demo-game-shell .demo-layout { flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 312px;gap:0;align-items:stretch;border:3px solid #365548;box-shadow:inset 0 0 0 2px #f3f4d5;overflow:hidden;background:#eff0dd; }
+.demo-game-shell .demo-world-column { grid-column:1;grid-row:1;display:flex;flex-direction:column;position:relative;top:auto;min-height:0;min-width:0;order:0; }
+.demo-game-shell .demo-world-frame { display:flex;flex-direction:column;flex:1;min-height:0;width:100%;border:0;border-radius:0;box-shadow:none;order:0; }
+.demo-game-shell .demo-world-caption { flex:0 0 53px;padding:9px 16px;background:#dce7d6;border-bottom:1px solid #b8ccb2;color:#3b5d4b;font:10px/1.5 monospace; }
+.demo-game-shell .demo-world-caption b { display:block;color:#294d3e;font-size:13px;letter-spacing:1.5px; }
+.demo-game-shell .demo-world-caption small { font:10px monospace; }
+.demo-game-shell .demo-world-caption>span:last-child { font-size:9px;letter-spacing:.5px; }
+.demo-game-shell .demo-scene { flex:1;min-height:0;height:auto; }
+.demo-game-shell .demo-scene>.hm3d { height:100%; }
+.demo-game-shell .hm3d-stage { min-height:80px;height:100%; }
+.demo-game-shell .hm3d-toolbar { padding:5px 8px;gap:5px;left:8px;right:8px;bottom:8px; }
+.demo-game-shell .hm3d-camera { border:1px solid #6d8872;border-radius:2px;background:#f8f7e7;box-shadow:2px 2px #b3c3a5; }
+.demo-game-shell .hm3d-camera button { color:#355747;border-radius:0;min-width:38px;min-height:36px;padding:5px 8px; }
+.demo-game-shell .hm3d-build-controls button { border:1px solid #78917a;border-radius:2px;color:#355747;background:#f8f7e7;font-size:10px;min-height:36px;padding:5px 8px; }
+.demo-game-shell .hm3d-constructing .hm3d-toolbar { background:#dce5ce;border-top:1px solid #aebf9c; }
+.demo-game-shell .demo-world-footer { flex:0 0 29px;padding:5px 12px;background:#cadabf;border-top:1px solid #adc299;color:#3b5947;font:9px/1.4 monospace; }
+.demo-game-shell .demo-setup { grid-column:2;grid-row:1;display:flex;flex-direction:column;min-height:0;min-width:0;padding:0;border-left:3px solid #365548;background:#fcf8e6; }
+.demo-menu-scroll { overflow:auto;overscroll-behavior:contain;min-height:0;padding:17px 16px;scrollbar-width:thin;scrollbar-color:#8ca57d #eee9d5; }
+.demo-game-shell .demo-step-heading { margin:0 0 17px; }
+.demo-game-shell .demo-step-heading .demo-eyebrow { color:#567650;font:10px/1.3 monospace;letter-spacing:.6px;margin:0 0 8px; }
+.demo-game-shell .demo-step-heading h1 { font:700 23px/1.15 monospace;letter-spacing:-1px;margin:0;color:#294c3f; }
+.demo-game-shell .demo-step-heading>p:last-child { font:12px/1.5 Arial,sans-serif;color:#5b6b57;margin:8px 0 0; }
+.demo-game-shell .demo-region-grid { grid-template-columns:1fr;gap:5px; }
+.demo-game-shell .demo-region { display:flex;align-items:center;min-height:48px;border:1px solid transparent;border-radius:0;background:transparent;box-shadow:none;transition:none;overflow:visible; }
+.demo-game-shell .demo-region:hover { transform:none;background:#edf0d6;border-color:#9bb386; }
+.demo-game-shell .demo-region[aria-pressed=true] { background:#dfeabf;border:1px solid #72916b;box-shadow:3px 3px #c4d2a5; }
+.demo-game-shell .demo-region-art { width:35px;height:35px;flex:0 0 35px;margin:5px;background:transparent;overflow:hidden; }
+.demo-game-shell .demo-region-art b { font-size:29px;top:2px;left:4px;transform:none;color:#5b7c5a; }
+.demo-game-shell .demo-region-art i,.demo-game-shell .demo-region-art:after { display:none; }
+.demo-game-shell .demo-region-copy { padding:5px 6px;gap:3px; }
+.demo-game-shell .demo-region-copy strong { font:700 13px/1.1 monospace;color:#314f3f; }
+.demo-game-shell .demo-region-copy small { font-size:10px;color:#65745c; }
+.demo-game-shell .demo-check { width:19px;height:19px;border:0;border-radius:0;background:transparent!important;color:#42653b!important;font:700 17px monospace; }
+.demo-game-shell .demo-region>.demo-check { position:static;margin-left:auto;margin-right:8px; }
+.demo-game-shell .demo-fine { margin-top:14px;color:#5c6e57;font:10px/1.55 monospace; }
+.demo-game-shell .demo-resume { font:11px/1.6 monospace;color:#416d4e;margin-top:6px; }
+.demo-game-shell .demo-home-options { gap:8px; }
+.demo-game-shell .demo-home-options button,.demo-game-shell .demo-team-options>button { min-height:75px;padding:10px 8px;gap:10px;background:transparent;border:1px solid #c7d0ae;border-radius:0;box-shadow:none; }
+.demo-game-shell .demo-home-options button[aria-pressed=true],.demo-game-shell .demo-team-options>button[aria-pressed=true] { background:#dfeabf;border-color:#72916b;box-shadow:3px 3px #c4d2a5; }
+.demo-game-shell .demo-home-options strong,.demo-game-shell .demo-team-options strong { font:700 14px monospace;color:#314f3f; }
+.demo-game-shell .demo-home-options small,.demo-game-shell .demo-team-options p { font-size:11px;color:#5f7059; }
+.demo-game-shell .demo-home-symbol { color:#63825c; }
+.demo-game-shell .demo-team-options { gap:6px; }
+.demo-game-shell .demo-team-options svg { width:40px;height:40px;flex-basis:40px; }
+.demo-game-shell .demo-team-options small { color:#68815c;font-size:8px; }
+.demo-game-shell .demo-team-extra-options { grid-template-columns:1fr;gap:6px;margin:10px 0; }
+.demo-game-shell .demo-team-extra-options button { padding:8px;min-height:66px;border:1px solid #bccca6; }
+.demo-game-shell .demo-team-extra-options svg { width:35px;height:40px; }
+.demo-game-shell .demo-team-extra-options em { font-size:9px;color:#63745a; }
+.demo-game-shell .demo-weather-source-controls { gap:5px;margin:0 0 12px; }
+.demo-game-shell .demo-weather-source-controls button { padding:7px;font-size:10px;min-height:36px;flex:1;border-width:1px; }
+.demo-game-shell .demo-weather-card { padding:12px;border-radius:0;border:1px solid #afc39e;background:#e9edd3; }
+.demo-game-shell .demo-card-top { font-size:8px;color:#566d4b;letter-spacing:.5px; }
+.demo-game-shell .demo-weather-main { gap:18px; }
+.demo-game-shell .demo-weather-main>strong { color:#3f6348;font-size:48px; }
+.demo-game-shell .demo-weather-main b { font-size:12px; }
+.demo-game-shell .demo-weather-main>div span,.demo-game-shell .demo-source,.demo-game-shell .demo-chart-axis { color:#536e4d; }
+.demo-game-shell .demo-weather-card svg { margin-top:10px;max-height:95px; }
+.demo-game-shell .demo-weather-sandbox { border-radius:0;background:#f5f3dc;border-color:#aabd96;padding:10px; }
+.demo-game-shell .demo-weather-sandbox>label { color:#486b48;font-size:9px; }
+.demo-game-shell .demo-weather-actions { gap:4px; }
+.demo-game-shell .demo-weather-actions button { font-size:10px;padding:5px;min-height:36px;border-radius:0;color:#3c6547;border-color:#a9be96; }
+.demo-game-shell .demo-weather-actions button[aria-pressed=true] { background:#d9e6bb;border-color:#72935e; }
+.demo-game-shell .demo-completion,.demo-game-shell .demo-ready-badge,.demo-game-shell .demo-quest { padding:12px;border:0;border-radius:0;background:transparent;margin:0; }
+.demo-game-shell .demo-completion { padding:0 0 12px; }
+.demo-game-shell .demo-completion>.demo-eyebrow { display:none; }
+.demo-game-shell .demo-completion>.demo-next { padding:9px 12px;min-height:44px;font:11px/1.4 monospace; }
+.demo-game-shell .demo-completion>p:last-child { color:#5b7054;font-size:11px;line-height:1.5;margin-top:10px; }
+.demo-game-shell .demo-next { border:2px solid #2c4f3e;border-radius:0;background:#527d60;box-shadow:3px 3px #b1c298;color:#fffbe3; }
+.demo-game-shell .demo-ready-badge { background:#e2ebc8;gap:8px;padding:10px; }
+.demo-game-shell .demo-team-mini { gap:15px;flex-wrap:wrap;padding:12px 4px; }
+.demo-game-shell .demo-quest { border-top:1px solid #c4d0af;padding:12px 0; }
+.demo-game-shell .demo-quest select { border-radius:0;background:#fffbea;border-color:#8ba67a;color:#325b40;font-size:12px; }
+.demo-game-shell .demo-quest-numbers { margin-top:12px;gap:8px; }
+.demo-game-shell .demo-quest-numbers strong { font-size:26px;color:#3d6747; }
+.demo-game-shell .demo-quest-numbers small { color:#607a54;font-size:8px; }
+.demo-game-shell .demo-savings { font-size:10px;background:#e8edce;border-radius:0; }
+.demo-game-shell .demo-schedules li { font-size:10px; }.demo-game-shell .demo-schedules li span { font-size:9px;color:#627456; }
+.demo-game-shell .demo-future { display:none; }
+.demo-game-shell .demo-spec-links button { font-size:10px;padding:6px;min-height:36px;border-width:1px; }
+.demo-game-shell .demo-photo-toggle { border-radius:0;background:#e9edd4;border-color:#90aa78;color:#365a40;font:11px/1.5 monospace; }
+.demo-dialogue-dock { flex:0 0 174px;height:174px;margin-top:10px;min-height:0; }
+.demo-game-shell .demo-footer { flex:0 0 26px;min-height:0;margin:0;padding:6px 1px;border:0;font:8px/1.4 monospace;color:#5b7159; }
+.demo-game-shell :focus-visible { outline:3px solid #bd7038;outline-offset:2px; }
+.game-world-details-toggle { position:absolute;right:12px;top:65px;z-index:4;background:#fffae9;border:1px solid #6d8b62;padding:7px 10px;font:10px monospace;color:#3d6045;min-height:32px; }
+.game-world-details { position:absolute;inset:60px 10px 40px;overflow:auto;overscroll-behavior:contain;z-index:5;background:#fffae8;border:3px double #436449;padding:14px;box-shadow:4px 4px #33523d55; }
+.game-world-details>button { min-height:36px;float:right;padding:5px 10px;border:1px solid #718b65;font:11px monospace; }
+.game-world-details .demo-impact { background:transparent;border:0;margin-top:35px;padding:0; }
+.game-recruit-dialog { margin:auto;width:min(680px,calc(100vw - 24px));max-height:calc(100dvh - 28px);overflow:auto;overscroll-behavior:contain;padding:16px;border:5px double #365548;background:#fff9e5;color:#233e38;box-shadow:6px 6px #183a3280; }
+.game-recruit-dialog::backdrop { background:#173b2fb3; }
+.demo-game-shell .game-world-details { position:fixed;inset:0;margin:auto;width:min(600px,calc(100vw - 24px));height:fit-content;max-height:calc(100dvh - 40px);padding:20px; }
+.game-world-details::backdrop { background:#173b2fb3; }
+.game-dialog-title { display:flex;align-items:center;justify-content:space-between;gap:12px;font:700 12px monospace;margin-bottom:14px; }
+.game-dialog-title button { min-height:40px;padding:6px 12px;background:#e3eac8;border:1px solid #6b875b;font:11px monospace; }
+@media(min-width:1500px) { .demo-game-shell { padding-inline:max(22px,calc((100vw - 1500px)/2)); } }
+@media(max-width:1000px) and (min-width:701px) { .demo-game-shell { padding-inline:12px; }.demo-game-shell .demo-layout { grid-template-columns:minmax(0,1fr) 280px; }.demo-menu-scroll { padding:14px 12px; }.demo-game-shell .demo-step-heading h1 { font-size:20px; } }
+@media(max-width:700px) {
+  .demo-game-shell { padding:0 8px; }
+  .demo-game-shell .demo-header { flex-basis:44px;height:44px; }
+  .demo-game-shell .demo-brand { font-size:19px; }.demo-game-shell .demo-brand>span:first-child { width:23px;height:24px;font-size:20px; }
+  .demo-game-shell .demo-exit { font-size:9px; }.demo-game-shell .demo-edition { display:none; }
+  .demo-game-shell .demo-progress { flex-basis:29px;margin-bottom:6px; }
+  .demo-game-shell .demo-progress button { padding:4px 3px;gap:3px;min-height:25px;justify-content:center; }
+  .demo-game-shell .demo-progress button b { font:9px/1 monospace; }.demo-game-shell .demo-progress button span { font-size:8px; }
+  .demo-game-shell .demo-layout { grid-template-columns:1fr;grid-template-rows:minmax(180px,1fr) minmax(140px,.65fr); }
+  .demo-game-shell .demo-world-column { grid-column:1;grid-row:1;display:flex; }
+  .demo-game-shell .demo-setup { grid-column:1;grid-row:2;display:flex;border-left:0;border-top:2px solid #365548; }
+  .demo-menu-scroll { padding:10px 12px; }
+  .demo-game-shell .demo-step-heading { margin-bottom:9px; }.demo-game-shell .demo-step-heading .demo-eyebrow { display:none; }
+  .demo-game-shell .demo-step-heading h1 { font-size:17px;letter-spacing:-.5px; }.demo-game-shell .demo-step-heading>p:last-child { display:none; }
+  .demo-game-shell .demo-region-grid { grid-template-columns:1fr 1fr;gap:4px; }.demo-game-shell .demo-region { min-height:39px; }
+  .demo-game-shell .demo-region-art { display:none; }.demo-game-shell .demo-region-copy { padding:5px 7px;gap:2px; }.demo-game-shell .demo-region-copy strong { font-size:11px; }.demo-game-shell .demo-region-copy small { font-size:8px; }
+  .demo-game-shell .demo-region>.demo-check { margin-right:5px;width:12px;font-size:13px; }
+  .demo-game-shell .demo-world-caption { flex-basis:36px;padding:5px 9px;font-size:9px; }.demo-game-shell .demo-world-caption b { font-size:10px;letter-spacing:1px; }.demo-game-shell .demo-world-caption small { font-size:8px; }.demo-game-shell .demo-world-caption>span:last-child { font-size:7px; }
+  .demo-game-shell .demo-world-footer { flex-basis:22px;padding:4px 7px;font-size:8px; }.demo-game-shell .demo-world-footer>span:last-child { font-size:7px; }
+  .demo-game-shell .hm3d-constructing .hm3d-toolbar { flex-wrap:nowrap;padding:4px;justify-content:space-between;gap:4px; }
+  .demo-game-shell .hm3d-camera { padding:0; }.demo-game-shell .hm3d-camera button { min-width:29px;min-height:32px;padding:4px;font-size:9px; }
+  .demo-game-shell .hm3d-camera button:not(:last-child) { font-size:17px; }.demo-game-shell .hm3d-build-controls { width:auto;gap:3px; }
+  .demo-game-shell .hm3d-build-controls button { min-height:32px;padding:4px 5px;font-size:8px;max-width:83px; }
+  .demo-game-shell .demo-home-options { flex-direction:row;gap:5px; }.demo-game-shell .demo-home-options button { flex:1;display:flex;flex-direction:column;min-height:86px;gap:4px;padding:6px 4px;text-align:center;position:relative; }
+  .demo-game-shell .demo-home-options small { display:none; }.demo-game-shell .demo-home-options strong { font-size:11px;margin:0; }.demo-game-shell .demo-home-symbol { font-size:29px;line-height:1; }.demo-game-shell .demo-home-options .demo-check { position:absolute;right:2px;top:2px;font-size:12px; }
+  .demo-game-shell .demo-team-options { flex-direction:row;gap:5px; }.demo-game-shell .demo-team-options>button { flex:1;position:relative;flex-direction:column;gap:3px;min-height:83px;padding:5px 3px;text-align:center; }
+  .demo-game-shell .demo-team-options small,.demo-game-shell .demo-team-options p { display:none; }.demo-game-shell .demo-team-options strong { font-size:11px;margin:0; }.demo-game-shell .demo-team-options svg { height:36px;width:36px;flex-basis:36px; }.demo-game-shell .demo-team-options .demo-check { position:absolute;right:3px;top:3px;font-size:12px; }
+  .demo-game-shell .demo-team-extra-options { grid-template-columns:1fr 1fr;gap:5px; }.demo-game-shell .demo-team-extra-options button { min-height:55px;font-size:11px;padding:5px; }.demo-game-shell .demo-team-extra-options em { font-size:8px; }.demo-game-shell .demo-team-extra-options svg { width:28px;height:32px; }
+  .demo-game-shell .demo-weather-main>strong { font-size:38px; }.demo-game-shell .demo-weather-card svg { max-height:75px; }
+  .demo-dialogue-dock { flex-basis:190px;height:190px;margin-top:8px; }.demo-game-shell .demo-footer { flex-basis:20px;font-size:6px;padding:5px 0; }
+  .game-world-details-toggle { top:43px;right:7px;font-size:8px;min-height:27px;padding:4px 7px; }.game-world-details { inset:40px 5px 25px;padding:10px; }
+}
+@media(max-width:350px) { .demo-game-shell { padding-inline:5px; }.demo-game-shell .demo-progress button b { font-size:8px; }.demo-game-shell .demo-progress button span { display:none; }.demo-game-shell .hm3d-camera button { min-width:25px; }.demo-game-shell .hm3d-build-controls button { font-size:9px;padding:4px;max-width:none;min-height:32px; }.demo-game-shell .hm3d-constructing .hm3d-toolbar { flex-wrap:wrap;justify-content:center; }.demo-game-shell .hm3d-build-controls { width:100%; }.demo-game-shell .demo-layout { grid-template-rows:minmax(164px,1fr) minmax(130px,.65fr); } }
+@media(max-height:500px) and (min-width:701px) {
+  .demo-game-shell { padding-inline:8px; }.demo-game-shell .demo-header { flex-basis:33px;height:33px; }.demo-game-shell .demo-brand { font-size:18px; }.demo-game-shell .demo-brand>span:first-child { height:23px;width:23px;font-size:20px; }
+  .demo-game-shell .demo-progress { flex-basis:25px;margin-bottom:4px; }.demo-game-shell .demo-progress button { min-height:21px;padding:2px 8px; }
+  .demo-game-shell .demo-layout { grid-template-columns:minmax(0,1fr) 300px; }.demo-menu-scroll { padding:8px 12px; }.demo-game-shell .demo-step-heading { margin-bottom:8px; }.demo-game-shell .demo-step-heading h1 { font-size:17px; }.demo-game-shell .demo-step-heading>p:last-child,.demo-game-shell .demo-step-heading .demo-eyebrow { display:none; }
+  .demo-game-shell .demo-region-grid { grid-template-columns:1fr 1fr;gap:3px; }.demo-game-shell .demo-region { min-height:35px; }.demo-game-shell .demo-region-art { display:none; }.demo-game-shell .demo-region-copy { padding:4px; }.demo-game-shell .demo-region-copy strong { font-size:10px; }.demo-game-shell .demo-region-copy small { font-size:8px; }.demo-game-shell .demo-region>.demo-check { font-size:11px;margin-right:3px;width:12px; }
+  .demo-game-shell .demo-world-caption { flex-basis:28px;padding:3px 10px; }.demo-game-shell .demo-world-caption b { display:inline;font-size:10px; }.demo-game-shell .demo-world-caption small { margin-left:8px;font-size:8px; }.demo-game-shell .demo-world-footer { flex-basis:20px;padding:3px 8px;font-size:8px; }
+  .demo-game-shell .hm3d-camera button,.demo-game-shell .hm3d-build-controls button { min-height:28px;padding:3px 6px; }.demo-game-shell .hm3d-stage { min-height:55px; }.demo-dialogue-dock { flex-basis:108px;height:108px;margin-top:5px; }.demo-game-shell .demo-footer { flex-basis:16px;padding:2px 0;font-size:7px; }
+}
+
+/* Mobile QA: retain reachable camera actions and readable simulation disclosure. */
+@media(max-width:700px) {
+  .demo-game-shell .hm3d-camera button { min-width:44px; min-height:44px; }
+  .demo-game-shell .hm3d-toolbar { min-height:48px; }
+  .demo-game-shell .demo-footer { flex-basis:30px; font-size:9px; line-height:1.4; }
+}
+@media(max-width:420px) {
+  .demo-game-shell .hm3d-constructing .hm3d-toolbar { flex-wrap:wrap;justify-content:center; }
+  .demo-game-shell .hm3d-build-controls { width:100%; }
+  .demo-game-shell .hm3d-build-controls button { max-width:none;min-height:34px;font-size:9px; }
+}
+
+/* Local weather selection keeps native keyboard and phone dropdown behavior. */
+.demo-location-picker { margin:0 0 16px;min-width:0; }
+.demo-location-picker label { display:block;margin:10px 0 6px;font:700 11px/1.4 monospace;color:#294c3f; }
+.demo-location-search { display:flex;gap:5px; }
+.demo-location-picker input,.demo-location-picker select { width:100%;min-width:0;min-height:42px;padding:8px;border:1px solid #728a66;border-radius:0;background:#fffbea;color:#294c3f;font:12px/1.4 Arial,sans-serif; }
+.demo-location-picker input { flex:1; }
+.demo-location-search button { flex:0 0 76px;padding:5px;border:1px solid #365548;background:#527d68;color:#fff9df;font:11px/1.4 monospace; }
+.demo-location-search button:disabled { background:#dedfc9;color:#68725e;border-color:#b1b69a; }
+.demo-location-status,.demo-location-hint { margin:8px 0;font:10px/1.5 monospace;color:#52684c;overflow-wrap:anywhere; }
+.demo-location-hint { font:11px/1.4 Arial,sans-serif; }
+.demo-weather-place { margin:8px 0;font:700 12px/1.4 monospace;color:#294c3f;overflow-wrap:anywhere; }
+
+.demo-location-update { margin-top:8px;min-height:40px;padding:8px;border:1px solid #365548;background:#e0e9ca;color:#294c3f;font:11px monospace; }

@@ -4,6 +4,8 @@ import type { BackgroundDemand } from "./demo";
 export type DemoAcHour = { hour: number; powerKw: number; energyKwh: number; costUsd: number; carbonGrams: number };
 export type DemoAcActivity = {
   hourly: DemoAcHour[];
+  /** Actual forecast-derived second-day activity when supplied; totals above describe day one. */
+  forecastHourly?: DemoAcHour[];
   energyKwh: number;
   costUsd: number;
   carbonGrams: number;
@@ -13,7 +15,7 @@ export type DemoAcStats = {
   status: "active" | "idle" | "complete";
   currentPowerKw: number;
   completedEnergyKwh: number;
-  /** Two repetitions of the fictional 24-hour activity on the 48-hour clock. */
+  /** Full 48-hour horizon; live day two is distinct when a forecast is available. */
   totalEnergyKwh: number;
   accruedCostUsd: number;
   accruedCarbonGrams: number;
@@ -33,15 +35,21 @@ export function buildDemoAcActivity(background: BackgroundDemand, rates: readonl
     const energyKwh = selected ? row.coolingKwh : 0;
     return { hour, powerKw: energyKwh, energyKwh, ...estimateUsage(energyKwh, rates[hour]) };
   });
+  const forecastHourly = background.nextDayHourly ? [...hourly, ...background.nextDayHourly.map((row, index): DemoAcHour => {
+    if (!row || row.hour !== index + 24 || !Number.isFinite(row.coolingKwh) || row.coolingKwh < 0) throw new RangeError("Invalid next-day cooling interval.");
+    const energyKwh = selected ? row.coolingKwh : 0;
+    return { hour: index + 24, powerKw: energyKwh, energyKwh, ...estimateUsage(energyKwh, rates[index]) };
+  })] : undefined;
+  if (forecastHourly && forecastHourly.length !== 48) throw new RangeError("Forecast cooling requires two complete days.");
   const totals = hourly.reduce((sum, row) => ({ energyKwh: sum.energyKwh + row.energyKwh,
     costUsd: sum.costUsd + row.costUsd, carbonGrams: sum.carbonGrams + row.carbonGrams }), { energyKwh: 0, costUsd: 0, carbonGrams: 0 });
   if (!Object.values(totals).every(Number.isFinite)) throw new RangeError("AC totals exceed the numeric range.");
-  return { hourly, ...totals, assumptions: [
+  return { hourly, ...(forecastHourly ? { forecastHourly } : {}), ...totals, assumptions: [
     "Illustrative average AC electrical draw in one-hour intervals, not compressor telemetry, a thermostat command, or a comfort prediction.",
     "The chosen workday example gives morning 06–09 and evening 17–23 full occupancy weight, daytime 09–17 weight 0.55, and sleeping hours weight 0.7. No positive cooling load is forced off.",
     "Temperature, humidity and residence scale the background cooling model; neither optimization objective nor electricity price changes this activity.",
     "This is the cooling portion already included in background demand. Do not add it again to household totals; it contributes no optimized savings.",
-    "The fictional 24-hour activity repeats on the 48-hour clock. Carbon is modeled average grid CO₂e, not measured or marginal avoided emissions.",
+    forecastHourly ? "Two distinct forecast days drive this 48-hour cooling trace; prices/carbon remain synthetic and repeat daily." : "The fictional 24-hour activity repeats on the 48-hour clock. Carbon is modeled average grid CO₂e, not measured or marginal avoided emissions.",
     ...(selected ? [] : ["Chill is not selected, so no AC activity is assigned; background demand remains a separate illustrative building estimate."]),
   ] };
 }
@@ -56,16 +64,20 @@ export function getDemoAcStats(activity: DemoAcActivity, absoluteHour: number): 
   for (const key of ["energyKwh", "costUsd", "carbonGrams"] as const) {
     if (!Number.isFinite(activity[key]) || !Number.isFinite(2 * totals[key]) || Math.abs(activity[key] - totals[key]) > 1e-8 * Math.max(1, Math.abs(totals[key]))) throw new RangeError("AC totals do not match hourly activity.");
   }
+  const forecast = activity.forecastHourly;
+  if (forecast && (forecast.length !== 48 || !Array.from(forecast).every((row, hour) => row && row.hour === hour &&
+    [row.energyKwh, row.powerKw, row.costUsd, row.carbonGrams].every(Number.isFinite) && row.energyKwh >= 0 && row.carbonGrams >= 0 && row.powerKw === row.energyKwh &&
+    (hour >= 24 || ["energyKwh", "costUsd", "carbonGrams"].every(key => row[key as keyof DemoAcHour] === activity.hourly[hour][key as keyof DemoAcHour]))))) throw new RangeError("Invalid 48-hour forecast activity.");
   const time = Math.min(48, Math.max(0, absoluteHour));
   let completedEnergyKwh = 0, accruedCostUsd = 0, accruedCarbonGrams = 0;
   for (let hour = 0; hour < 48; hour++) {
     const duration = Math.max(0, Math.min(1, time - hour));
-    const row = activity.hourly[hour % 24];
+    const row = forecast?.[hour] ?? activity.hourly[hour % 24];
     completedEnergyKwh += row.energyKwh * duration;
     accruedCostUsd += row.costUsd * duration;
     accruedCarbonGrams += row.carbonGrams * duration;
   }
-  const currentPowerKw = time < 48 ? activity.hourly[Math.floor(time) % 24].powerKw : 0;
+  const currentPowerKw = time < 48 ? (forecast?.[Math.floor(time)] ?? activity.hourly[Math.floor(time) % 24]).powerKw : 0;
   return { status: time === 48 ? "complete" : currentPowerKw > 0 ? "active" : "idle", currentPowerKw,
-    completedEnergyKwh, totalEnergyKwh: totals.energyKwh * 2, accruedCostUsd, accruedCarbonGrams };
+    completedEnergyKwh, totalEnergyKwh: forecast ? forecast.reduce((sum, row) => sum + row.energyKwh, 0) : totals.energyKwh * 2, accruedCostUsd, accruedCarbonGrams };
 }

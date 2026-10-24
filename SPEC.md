@@ -72,7 +72,7 @@ From checkpoint a12674f, add a Join the demo entry and /demo route. A persistent
 
 Use synthetic weather only (explicit user clarification). Show a labeled fictional day, temperature/humidity and hourly graphic; allow bounded what-if temperature and sky changes. No weather-network or geolocation calls from the demo. Region-dependent synthetic electricity/carbon scenarios remain clearly labeled and denominated in USD for comparison. Residence and outdoor temperature affect a separately disclosed illustrative background heating/cooling calculation, never actual indoor temperature, thermal control or optimized Chill savings. Use the existing scheduler for selected flexible appliances; do not invent appliances or power measurements from a picture.
 
-Appliance recruitment supports manual selection and local photo/camera capture, with optional real on-device CLIP suggestions. No recognition API key is required. Disclose the first-use model/runtime download, allow cancellation and manual fallback, abstain on ambiguous results, and require explicit confirmation. No photos uploaded or persisted. Messaging-platform/iMessage integration is a future step, not implemented in this milestone. Save validated demo setup separately from existing household preferences; do not overwrite the existing planner by entering onboarding.
+Appliance recruitment supports manual selection and local photo/camera capture, with optional real on-device SigLIP suggestions (legacy three-type callers retain CLIP). No recognition API key is required. Disclose the first-use model/runtime download, allow cancellation and manual fallback, abstain on ambiguous results, and require explicit confirmation. No photos uploaded or persisted. Messaging-platform/iMessage integration is a future step, not implemented in this milestone. Save validated demo setup separately from existing household preferences; do not overwrite the existing planner by entering onboarding.
 
 ## City landmarks and interactive guide revision
 
@@ -95,3 +95,30 @@ Use region-specific authored demand-minus-solar curves and separate hourly price
 The completed home supports per-appliance text commands and optional browser speech input/output. Reuse the deterministic parser and optimizer; no API credentials or LLM are configured. Opening a call must not activate the microphone. Transcripts remain editable drafts until explicitly sent; speech never approves execution. Explain browser-provider processing and retain typed fallback.
 
 Each request computes a validated projection. A separate explicit approval binds the current proposal to its household/context and starts an accelerated local simulation. Preview scrubbing cannot execute tasks. Publish simulated start/completion updates and accrued calculations, then a computed completion receipt; never present these as real-device telemetry or measured savings. Approved runs remain immutable until reset. Persist only validated approved settings/progress, restore unfinished runs paused, and exclude chat/audio from storage. Protect Chill's fixed cooling model.
+
+## Landing separation, phone recruitment and iMessage pipeline
+
+Latest user scope supersedes earlier preserve-homepage layout and messaging deferral. `/` is a concise visual story: pinned scroll-driven low-poly world, restrained front-facing rotation/day transition, dimensional phone with progressive sample bubbles, final sentence and prominent top/bottom `/demo` entry. Keep graphs, rates, stats and planning controls in demo/lab routes. Retain reduced-motion and keyboard skip/manual alternatives.
+
+Phone scanning must reuse real optional local recognition with manual confirmation, then recruit into the saved model. Never derive wattage or a custom 3D mesh from a category match. A transfer link carries a category suggestion only, requiring another confirmation on the receiving browser.
+
+Implement an optional iMessage bridge pipeline to the existing browser command authority. Authentication, sender pairing, replay protection and bounded queues are required; browser execution approval remains explicit. Do not claim a live service until the Mac bridge and credentials are configured. No access to personal message databases or OS permission changes is required to implement/test the adapter.
+
+## Current revision: actual forecast, ten Applimon, reviewed specifications
+
+The later request for actual weather supersedes synthetic-only weather. Use current city conditions plus two local forecast days from Open-Meteo; show source, local timestamps, freshness and an explicit synthetic fallback. Feed hourly temperature/humidity into illustrative background cooling, including a distinct second day. Electricity/carbon profiles remain authored synthetic scenarios; weather is not device telemetry.
+
+Recruit Evie, Bubbles, Chill, Spin, Tumble, Ember, Misty, Rover, Frost and Breeze. Review electrical input, task energy, duration, baseline and timing constraints, optionally using local nameplate OCR candidates. Category recognition cannot determine power or identity. Preserve manual entry and explicitly labeled demo settings. Flexible jobs compare cost/carbon/balanced plans; AC, fridge and hot water remain protected, fan routines fixed. Preserve the baseline and require separate execution approval.
+
+Additional-party chat and execution use a separate session-only planner; confirmed passports persist. Core EV/dishwasher approval persistence remains intact. Show these boundaries rather than claiming unified device control or measured savings.
+
+## Consumer scanning and adversarial review revision
+
+Recruitment is scan-first and compact. Use a visual appliance scanner, provisional photo-to-sprite reveal, and three short specification steps (label, energy, routine). Camera/selection actions stay prominent; technical caveats and raw match scores live in optional details. A confirmed arrival celebrates an explicit reviewed recruitment, never automatic recognition or device control. Keep original photos local and release previews on cancellation, replacement and completion. Respect reduced motion.
+
+Review real appliance photographs, unrelated/synthetic negatives, official manufacturer sheets and misleading labels with actual local model runs. Separate native-engine evidence from browser interaction and physical-camera testing. Photo content screening can abstain on text/drawings/unclear photos but cannot authenticate an image. OCR candidates cannot authenticate a label or replace human review. Record findings, targeted repairs and remaining failures explicitly.
+
+
+## Local forecast location selection — latest user revision
+
+At the forecast chapter require explicit city/county selection from real place-search results before loading weather or proceeding. Scene presets remain presentation and authored energy scenarios; weather uses the chosen public place center and its time zone. Search labels distinguish name, county/admin area, state and country; provider coverage may require choosing a nearby city. Do not request device geolocation or claim address-level accuracy. Save validated selected-place metadata with a matching forecast snapshot; old region-only saves revisit location selection without losing the appliance team. Changes of place invalidate stale weather and schedule approval context. No synthetic fallback appears in this flow.

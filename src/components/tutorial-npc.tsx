@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
-import type { ApplianceId } from "@/domain/appliances";
+import type { ApplimonId } from "@/domain/applimon-catalog";
 import type { RegionId, ResidenceType } from "@/data/demo-regions";
 import { getTutorialChapter, getTutorialPrompt, type TutorialChapter, type TutorialTarget } from "@/data/tutorial-dialogue";
 import { GuideMascot } from "./guide-mascot";
@@ -13,11 +13,16 @@ type TutorialNpcProps = {
   step: number;
   regionId: RegionId;
   residenceType: ResidenceType;
-  applianceIds: readonly ApplianceId[];
+  applianceIds: readonly ApplimonId[];
   onNavigate: (target: TutorialTarget) => void;
   onAdvance?: () => void;
   canAdvance?: boolean;
   completed?: boolean;
+  presentation?: "floating" | "dock";
+  onBack?: () => void;
+  backLabel?: string;
+  advanceLabel?: string;
+  prompt?: string;
 };
 
 function GuideDialogue({ chapter, onNavigate }: { chapter: TutorialChapter; onNavigate: TutorialNpcProps["onNavigate"] }) {
@@ -85,21 +90,22 @@ const subscribe = () => () => {};
 const mountedSnapshot = () => true;
 const serverSnapshot = () => false;
 
-export function TutorialNpc({ onNavigate, onAdvance, canAdvance = true, completed = false, ...context }: TutorialNpcProps) {
+export function TutorialNpc({ onNavigate, onAdvance, canAdvance = true, completed = false, presentation = "floating", onBack, backLabel = "Back", advanceLabel, prompt, ...context }: TutorialNpcProps) {
   const mounted = useSyncExternalStore(subscribe, mountedSnapshot, serverSnapshot);
-  const [minimized, setMinimized] = useState(completed);
+  const [minimized, setMinimized] = useState(presentation === "floating" && completed);
   const [help, setHelp] = useState(false);
   const [awayFromHomeControls, setAwayFromHomeControls] = useState(false);
   const [helpHeight, setHelpHeight] = useState(180);
   const [position, setPosition] = useState<Placement | null>(null);
   const coach = useRef<HTMLElement>(null);
+  const initialSizing = useRef(false);
   const uid = useId();
   const chapter = getTutorialChapter(context);
   const target = chapter.pages[0].target;
   const anchorId = completed ? "demo-dashboard-clock" : chapter.index === 4 ? "demo-enter-home" : "demo-next-action";
   const contextKey = `${chapter.index}:${context.regionId}:${context.residenceType}:${[...context.applianceIds].sort().join(",")}`;
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || presentation === "dock") return;
     let frame = 0;
     const anchor = document.getElementById(anchorId) ?? document.getElementById(`demo-${target}-controls`);
     const protectedControls = Array.from(document.querySelectorAll<HTMLElement>(".hm3d-toolbar, #demo-home-objective, .dh-toggle, .apc-composer, .apc-voice-controls, .apc-approval-actions, .dh-run-controls"));
@@ -111,6 +117,10 @@ export function TutorialNpc({ onNavigate, onAdvance, canAdvance = true, complete
       const viewport = window.visualViewport;
       const viewportHeight = viewport?.height ?? window.innerHeight;
       const viewportWidth = viewport?.width ?? window.innerWidth;
+      if (!initialSizing.current) {
+        initialSizing.current = true;
+        if (viewportWidth <= 640) setMinimized(true);
+      }
       const anchorBounds = anchor?.getBoundingClientRect() ?? null;
       // Setup guidance stays with the home controls, leaving conversations unobstructed.
       setAwayFromHomeControls(completed && !!anchorBounds && anchorBounds.bottom <= 0);
@@ -150,23 +160,24 @@ export function TutorialNpc({ onNavigate, onAdvance, canAdvance = true, complete
       window.visualViewport?.removeEventListener("resize", schedule);
       window.visualViewport?.removeEventListener("scroll", schedule);
     };
-  }, [mounted, anchorId, target, minimized, help, completed]);
-  const message = getTutorialPrompt(context, completed);
+  }, [mounted, anchorId, target, minimized, help, completed, presentation]);
+  const message = prompt ?? getTutorialPrompt(context, completed);
   if (!mounted) return null;
-  return createPortal(<aside ref={coach} className={`hm-tutorial-npc${minimized ? " is-minimized" : ""}`} data-side={position?.side ?? "edge"} style={{ left: position?.left ?? 10, top: position?.top ?? 10, visibility: position && !awayFromHomeControls ? "visible" : "hidden", "--pip-tip": `${position?.tip ?? 40}px`, "--pip-help-height": `${helpHeight}px` } as CSSProperties} aria-label="Pip’s setup guide" onKeyDown={event => {
+  const content = <aside ref={coach} className={`hm-tutorial-npc${presentation === "dock" ? " hm-tutorial-dock" : ""}${minimized ? " is-minimized" : ""}`} data-side={position?.side ?? "edge"} style={presentation === "dock" ? undefined : { left: position?.left ?? 10, top: position?.top ?? 10, visibility: position && !awayFromHomeControls ? "visible" : "hidden", "--pip-tip": `${position?.tip ?? 40}px`, "--pip-help-height": `${helpHeight}px` } as CSSProperties} aria-label="Pip’s setup guide" onKeyDown={event => {
     if (event.key !== "Escape") return;
     event.preventDefault(); event.stopPropagation();
     if (help) { setHelp(false); coach.current?.querySelector<HTMLButtonElement>(`[aria-controls="${uid}-help"]`)?.focus(); }
-    else { setMinimized(true); coach.current?.querySelector<HTMLButtonElement>(`[aria-controls="${uid}-dialogue"]`)?.focus(); }
+    else if (presentation === "floating") { setMinimized(true); coach.current?.querySelector<HTMLButtonElement>(`[aria-controls="${uid}-dialogue"]`)?.focus(); }
   }}>
     <div className="hm-tutorial-portrait"><GuideMascot mood={completed || chapter.index === 4 ? "celebrate" : chapter.index === 2 ? "thinking" : "welcome"}/></div>
     <div className="hm-tutorial-bubble">
-      <header className="hm-tutorial-header"><span className="hm-tutorial-nameplate">PIP <span aria-hidden="true">✦</span></span><span className="hm-tutorial-step">{completed ? "YOUR FIELD GUIDE" : `${chapter.index + 1} / 5`}</span><button type="button" aria-label={minimized ? "Open Pip’s guide" : "Minimize Pip’s guide"} aria-expanded={!minimized} aria-controls={`${uid}-dialogue`} onClick={() => { setMinimized(value => !value); setHelp(false); }}>{minimized ? "+" : "−"}</button></header>
-      <div id={`${uid}-dialogue`} hidden={minimized}>
-        <p className="hm-tutorial-prompt">{message}</p>
-        <div className="hm-tutorial-actions"><button type="button" className="hm-tutorial-advance" disabled={!completed && !canAdvance} onClick={() => { if (completed) onNavigate("plan"); else if (canAdvance) onAdvance?.(); }}>{completed ? "Show my controls" : chapter.index === 4 ? "Enter my home" : "Next step"}<span aria-hidden="true"> →</span></button><button type="button" aria-expanded={help} aria-controls={`${uid}-help`} onClick={() => setHelp(value => !value)}>{help ? "Less help" : "Help?"}</button></div>
-        <div id={`${uid}-help`} className="hm-tutorial-expanded" hidden={!help}><GuideDialogue key={contextKey} chapter={chapter} onNavigate={onNavigate}/><p className="hm-tutorial-note">Written guidance · simulated home</p></div>
+      <header className="hm-tutorial-header"><span className="hm-tutorial-nameplate">PIP <span aria-hidden="true">✦</span></span><span className="hm-tutorial-step">{completed ? "YOUR FIELD GUIDE" : `${chapter.index + 1} / 5`}</span>{presentation === "floating" && <button type="button" aria-label={minimized ? "Open Pip’s guide" : "Minimize Pip’s guide"} aria-expanded={!minimized} aria-controls={`${uid}-dialogue`} onClick={() => { setMinimized(value => !value); setHelp(false); }}>{minimized ? "+" : "−"}</button>}{presentation === "dock" && <span className="hm-tutorial-written">WRITTEN GUIDE</span>}</header>
+      <div id={`${uid}-dialogue`} hidden={presentation === "floating" && minimized}>
+        <p className="hm-tutorial-prompt" tabIndex={presentation === "dock" ? 0 : undefined} hidden={presentation === "dock" && help}>{message}<span className="hm-tutorial-caret" aria-hidden="true">▾</span></p>
+        <div className="hm-tutorial-actions">{onBack && <button type="button" className="hm-tutorial-back" onClick={onBack}>← {backLabel}</button>}<button type="button" className="hm-tutorial-advance" disabled={!completed && !canAdvance} onClick={() => { if (completed) onNavigate("plan"); else if (canAdvance) onAdvance?.(); }}>{advanceLabel ?? (completed ? "Show my controls" : chapter.index === 4 ? "Enter my home" : "Next step")}<span aria-hidden="true"> →</span></button><button type="button" aria-expanded={help} aria-controls={`${uid}-help`} onClick={() => setHelp(value => !value)}>{help ? "Less help" : "Help?"}</button></div>
+        <div id={`${uid}-help`} className="hm-tutorial-expanded" hidden={!help} role="region" aria-label="Pip’s guide pages" tabIndex={0}>{presentation === "dock" && <span className="hm-tutorial-scroll-hint" aria-hidden="true">Scroll for guide pages ↓</span>}<GuideDialogue key={contextKey} chapter={chapter} onNavigate={onNavigate}/><p className="hm-tutorial-note">Written guidance · simulated home</p></div>
       </div>
     </div>
-  </aside>, document.body);
+  </aside>;
+  return presentation === "dock" ? content : createPortal(content, document.body);
 }

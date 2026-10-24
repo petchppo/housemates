@@ -1,6 +1,6 @@
 # Housemates
 
-A Stanford CleanTech hackathon prototype for household energy planning. Built with Next.js App Router, TypeScript, Tailwind CSS, and Three.js. Explore an original 3D household, replay a calculated energy plan, and meet its pixel-art appliance characters. No smart-home hardware, credentials, or external services are needed.
+A Stanford CleanTech hackathon prototype for household energy planning. Built with Next.js App Router, TypeScript, Tailwind CSS, and Three.js. Explore an original 3D household, replay a calculated energy plan, and meet its pixel-art appliance characters. No smart-home hardware or paid AI API is required. Public city weather is optional with a labeled synthetic fallback; photo assistance downloads local inference assets, and iMessage requires a separately configured bridge.
 
 ## Run locally
 
@@ -11,21 +11,20 @@ npm install
 npm run dev -- --hostname 0.0.0.0
 ```
 
-Open http://localhost:3000 for the homepage, http://localhost:3000/household for Appliance Parliament, and http://localhost:3000/energy-parliament for the scheduling laboratory. The homepage links to both. See [DEMO.md](DEMO.md) for the 90-second presentation script; [PROGRESS.md](PROGRESS.md) records completed verification separately.
+Open [http://localhost:3000](http://localhost:3000). The landing page is a short scroll story: a front-facing 3D world, a dimensional phone that reveals messages, and **Join the demo** links at the top and bottom. Native sticky sections keep the scene visible while it animates; Skip, manual playback, keyboard controls and reduced-motion alternatives remain available. The phone story is scripted, not a live conversation.
 
-For a phone on the same Wi-Fi, use the laptop's local IP address, e.g. http://192.168.1.10:3000/household. Some guest networks block connections between devices.
+| Route | Purpose |
+| --- | --- |
+| `/` | Simple world-and-phone introduction |
+| `/demo` | City, residence, forecast, team and move-in setup |
+| `/demo/home` | Saved household, modeled stats, planning, typed commands and browser voice |
+| `/demo/scan` | Photo/manual category → reviewed specifications → saved household recruitment |
+| `/household` | Existing household conversation, preferences and memory experience |
+| `/energy-parliament` | Isolated scheduling laboratory |
 
-## Explore the household
+For a phone on the same Wi-Fi, use the laptop's LAN address, for example `http://192.168.1.10:3000/demo/scan`; `localhost` on the phone refers to the phone itself. Some guest networks block peer connections. Browser camera/microphone APIs may require HTTPS; the photo file picker and manual path remain available, but camera capture availability depends on the phone/browser. Phone and laptop browser storage are separate. A category-only transfer link requires fresh specification review on the destination; it does not synchronize a household or transfer a photo.
 
-The world and phone are separate, vertically stacked scenes. Native sticky positioning holds each scene in view during its short scroll sequence; ordinary scrolling continues afterward. **Skip** moves past a sequence without trapping the keyboard or intercepting wheel/touch scrolling. Reduced motion and short viewports use ordinary document flow instead of pinning.
-
-- **3D world:** an actual Three.js/WebGL scene with modeled house, landscape, and appliances. By default, scrolling advances the simulated clock from Day 1 at 8am to Day 2 at 8am and gently changes the front-facing view; it does not automatically spin the house through a full turn. Drag or use the rotation and zoom controls to explore manually. Day/night lighting and resting character poses are visual simulation.
-- **Pixel status panel:** Evie and Bubbles show current simulated kW, completed/required kWh, session progress, accrued USD cost, and modeled kg CO₂e from the current feasible schedule. XP and levels come from remembered training. Chill remains a protected comfort character with no modeled AC energy or savings.
-- **Replay controls:** use the time slider, Play/Pause, Day/Night, or **Jump to job** to inspect a planned session. These manual actions leave scroll-following mode; **Scroll time** restores it. Reduced-motion and short-viewport fallbacks retain the manual clock. A plan must exist before scheduled appliance activity can be replayed. Replaying a proposed plan does not approve or execute it.
-- **Phone story:** a CSS 3D phone starts with an empty conversation, then reveals the user, Evie, Bubbles, and Chill as you scroll. **Next message**, **Show all**, and **Restart** provide manual controls; **Follow scroll** returns from manual playback. Reduced motion initially reveals all messages. This is a local demonstration conversation with an AI connection pending.
-- **Working planner:** **Plan the morning** and **Quiet after 10pm** calculate real scheduling options. **Say something to your party** produces a local placeholder reply and does not change planning constraints.
-
-The scene canvas also supports arrow-key rotation, `+`/`−` zoom, and `Home` to reset its view. Appliance buttons provide an alternative to selecting objects in the scene. No camera movement, lighting change, or playback control changes household scheduling constraints.
+See [ONBOARDING.md](ONBOARDING.md) for the current guided flow and [PROGRESS.md](PROGRESS.md) for actual verification and checkpoints. [DEMO.md](DEMO.md) preserves the earlier household presentation script.
 
 ## Checks
 
@@ -43,9 +42,16 @@ Tests use Node's built-in test runner. TypeScript compiles the engine and tests 
 ```text
 src/
   app/                         Existing homepage, layout, and styles
+    demo/                      Setup, completed home and phone recruitment
+    api/weather/route.ts       Validated public-city forecast proxy
+    api/imessage/route.ts      Optional configured bridge transport
     energy-parliament/page.tsx Scheduling test route
     household/page.tsx         Integrated conversation/demo route
   components/
+    demo-onboarding.tsx        Guided construction and validated setup
+    appliance-scan.tsx         Phone/manual recruitment and saved-world merge
+    applimon-spec-capture.tsx  Reviewed specs, optional local nameplate OCR
+    applimon-team-panel.tsx    Additional-party plans and session-only execution
     appliance-icon.tsx         Shared pixel appliance icon wrapper
     pixel-appliance.tsx        Original pixel-art appliance portraits
     energy-parliament.tsx      Laboratory and shared timeline
@@ -57,6 +63,11 @@ src/
     household-settings.tsx     Validated preference and load-profile editor
     use-household.ts           Browser store, hydration, persistence, reset
   domain/
+    applimon-catalog.ts        Ten categories, safety policies and passport validation
+    applimon-planning.ts       Generic additional-party requests and comparisons
+    appliance-recruitment.ts  Duplicate-safe confirmed recruitment
+    nameplate.ts              Conservative explicit-unit OCR text parser
+    demo-weather.ts           Forecast normalization, freshness and fallback
     appliances.ts              Agent identities and device-specific constraints
     energy.ts                  Shared cost/carbon arithmetic
     scheduling.ts              Pure validation, evaluation, search, comparisons
@@ -73,6 +84,8 @@ tests/                         Engine, conversation, memory, storage, simulation
 
 ## Scheduling API
 
+The existing Evie/Bubbles API below remains the core planner. `src/domain/applimon-planning.ts` adds typed generic planning over validated `ApplimonDevice` passports. The demo passes the seven additional categories separately to avoid counting core jobs twice. React is not a dependency of either engine.
+
 Import the typed API from `src/domain/scheduling.ts`. React is not a dependency of the engine. Future agents can use these functions without creating UI state:
 
 - `evaluateSchedule(request, startHour, profile)` returns a priced schedule, its feasibility, and validation issues. Invalid or out-of-horizon schedules have no calculated totals.
@@ -82,7 +95,9 @@ Import the typed API from `src/domain/scheduling.ts`. React is not a dependency 
 
 A `SchedulingRequest` wraps an existing flexible appliance definition with an inclusive allowed **start** window and a fixed `baselineStartHour`. Appliance availability, start window, completion deadline, and timeline bounds must all be satisfied. Finishing after the latest allowed start is permitted; finishing after the completion deadline is not.
 
-## Planning model and optimization
+## Core planning model and optimization
+
+These defaults describe the original fixtures. Reviewed demo passports can override core power, task energy, duration, baseline and availability; the laboratory and legacy household retain their own validated settings.
 
 - Evie needs **12 kWh**, with configurable constant charging power (default 7 kW), availability from Day 1 at 6pm, and default completion by Day 2 at 7am. This version searches one uninterrupted charging session, with exact energy accounting for its partial final hour. It does not search split charging sessions or variable power.
 - Bubbles runs a two-hour uninterrupted cycle using 1.2 kWh total. The default model distributes this evenly at 0.6 kW. Preferences can configure cycle duration, total energy, and an optional hourly kWh profile (one finite nonnegative value per cycle hour, summing to total energy). Profile power is modeled as constant within each hour; subhour spikes are excluded. Availability starts at Day 1 at 8pm; default completion is Day 2 at 7am.
@@ -101,13 +116,13 @@ Each occupied interval uses the shared arithmetic helper: `costUsd = kWh × $/kW
 
 ## Simulation contract and limitations
 
-All appliance activity is simulated. Phone dialogue is scripted. No real telemetry, device control, live AI response, or measured savings is claimed. The integrated /household stores preferences, settings, recent planning conversation, training, and up to 12 saved input snapshots in this browser. The laboratory remains an isolated, session-only test tool. Saved totals are recomputed from validated inputs, not trusted from storage. Memory is not synchronized between devices.
+All appliance activity is simulated. Landing-page phone dialogue is scripted; completed-demo chat uses deterministic commands and calculated replies. No real telemetry, device control, live AI response, or measured savings is claimed. The integrated /household stores preferences, settings, recent planning conversation, training, and up to 12 saved input snapshots in this browser. The laboratory remains an isolated, session-only test tool. Saved totals are recomputed from validated inputs, not trusted from storage. Memory is not synchronized between devices.
 
 `getSimulationStats(schedules, absoluteHour)` replays validated schedule intervals over hours 0–48. It accumulates interval energy, cost, and modeled emissions proportionally to elapsed active duration, preserving partial EV hours and zero-power dishwasher phases. Missing flexible-appliance schedules remain idle. These changing counters describe a fictional replay of a proposed schedule, not metered usage or completed real-world work. Scene lighting and sleeping poses do not establish AC status, indoor temperature, or device safety.
 
-Energy data is hand-authored and synthetic, not a utility tariff, forecast, or live grid feed. It approximates a California weekday pattern: expensive 4–9pm electricity and lower midday carbon intensity. Currency is USD; carbon is estimated operational grid emissions in g CO₂e/kWh, not lifecycle emissions. Taxes, fixed charges, charging losses, exports, owned solar, demand charges, and other household loads are excluded. Results are estimates under these assumptions, not a complete bill or real-world carbon measurement.
+Electricity price and carbon data are hand-authored and synthetic, not a utility tariff or live grid feed. The guided demo can use a real public-city weather forecast; that does not turn its rates, household thermal model or appliance activity into measurements. It approximates a California weekday pattern: expensive 4–9pm electricity and lower midday carbon intensity. Currency is USD; carbon is estimated operational grid emissions in g CO₂e/kWh, not lifecycle emissions. Taxes, fixed charges, charging losses, exports, owned solar, demand charges, and other household loads are excluded. Results are estimates under these assumptions, not a complete bill or real-world carbon measurement.
 
-Hourly starts, continuous constant-power EV charging, per-hour dishwasher profiles, and repeated Day 2 rates limit the optimizer. The judge-facing text interaction currently uses API placeholders. Simulation controls use deterministic intent rules rather than an LLM; unsupported or ambiguous domain requests ask for clarification. There is no device integration, account system, external energy feed, or multi-device synchronization.
+Hourly starts, continuous constant-power EV charging, per-hour dishwasher profiles, and repeated Day 2 rates limit the optimizer. The legacy household scene retains its labeled API-placeholder interaction; the completed demo has working local planning commands. Simulation controls use deterministic intent rules rather than an LLM; unsupported or ambiguous domain requests ask for clarification. There is no device integration, account system, external energy feed, or multi-device synchronization.
 
 
 ## Conversation, memory, and training
@@ -128,14 +143,39 @@ Unique useful actions award 25 XP, with levels at 0/50/100/175 XP. Duplicate rew
 
 Public deployment and remote pushes are not part of this local mission. Use `npm run build` then `npm start` for a production preview after stopping the development server occupying that port, or choose another explicit local port. Do not interrupt an already-working demo unnecessarily.
 
-## Guided demo
+## Guided demo and expanded party
 
-Open `/demo`, or choose **Join the demo** on the homepage. Pip guides region, residence, synthetic weather and appliance-team setup while the 3D world assembles. Optional camera/photo suggestions run on-device in a worker; first use downloads about 190 MB. Manual confirmation is always required. Region/home/team/weather choices save separately from existing household plans.
+Open `/demo`, or choose **Join the demo**. Pip guides region, residence, forecast and team setup while the original low-poly world assembles. Six authored city scenes include symbolic cultural landmarks. **Finish build & enter home** opens `/demo/home`; Skip animation only completes the visual construction.
 
-See [ONBOARDING.md](ONBOARDING.md) for the pipeline, model/data boundaries, architecture and review workflow. Weather is synthetic only; messaging-platform integration is deferred. The only new runtime dependency for this milestone is `@huggingface/transformers`; the existing Three.js renderer is extended.
+The forecast requests current outdoor conditions and two local calendar days from Open-Meteo through `/api/weather`. The card identifies the source, city timezone and snapshot time. Invalid, stale or unavailable data yields an explicit synthetic fallback; Synthetic what-if remains selectable. Weather influences illustrative building heating/cooling, never a real thermostat. Prices, carbon intensity and regional USD multipliers remain authored examples. Refresh is explicit; snapshots are not silently polled underneath an approved plan. The scheduling horizon remains 48 modeled hourly slots; DST-length days are not represented.
 
-## Interactive appliance chat and calls
+Ten Applimon categories are available:
 
-After setup, open `/demo/home` and choose **Talk to your team**. Request a plan by text or **Call → Listen → review transcript → Send**. Optional reply readout uses browser speech. Review calculated timing/cost/carbon, then **Approve & run simulation**. The simulation updates task progress and produces a completed receipt; preview scrubbing never executes tasks.
+| Applimon | Appliance | Planning policy |
+| --- | --- | --- |
+| Evie | EV charger | Flexible uninterrupted charge |
+| Bubbles | Dishwasher | Flexible uninterrupted cycle |
+| Chill | Air conditioner | Protected; illustrative weather-driven trace only |
+| Spin | Washer | Flexible cycle |
+| Tumble | Dryer | Flexible cycle; no automatic washer dependency |
+| Ember | Water heater | Protected; no temperature or heating changes |
+| Misty | Dehumidifier | Explicit optional timed task; no humidity guarantee |
+| Rover | Robot vacuum | Flexible modeled task |
+| Frost | Refrigerator | Protected; no cooling changes |
+| Breeze | Fan | Fixed routine; no automatic shifting |
 
-No API key is required. This is a deterministic command assistant with optional browser voice, not a general-purpose LLM or connected appliance service. Voice support depends on the browser and may use its remote speech provider. See [VOICE.md](VOICE.md) for architecture, commands, persistence and limitations.
+A reviewed appliance **passport** stores electrical rating in W, task energy in kWh, duration, original start, available start window and completion deadline. Category recognition cannot establish these values. Enter them manually, explicitly load illustrative settings, or review candidates from optional local nameplate OCR. Rated power alone is not cycle energy; the full-rated-power estimate is a separate explicit choice. One device per category is supported. Confirmed passports persist in the browser and drive deterministic scheduling; photos and OCR text do not persist.
+
+`/demo/scan` supports camera/file input or manual selection, optional local SigLIP suggestions for ten categories, specification review and explicit recruitment into the saved world. It rereads the latest profile before merging and prevents duplicate category loads. The seven additional categories have original pixel portraits and low-poly models. Photos select an existing category model; they do not generate a custom 3D scan.
+
+Additional-party planning supports cost, carbon and balanced objectives, signed baseline comparisons, deadline/window revisions and explicit approval before simulated execution. Protected categories are excluded from optimized totals; fixed fan usage is reported separately and unchanged. No shared power limit or washer/dryer dependency is invented. **Additional-party chat revisions and execution are session-only**; reviewed passports persist, and reloading requires a new approval. Core Evie/Bubbles chat retains its separate validated run persistence. This distinction is visible in the party panel.
+
+See [ONBOARDING.md](ONBOARDING.md) and [RECOGNITION.md](RECOGNITION.md) for source boundaries, data handling and actual evidence. Physical-phone camera behavior and real appliance nameplate accuracy have not been verified in this revision; a synthetic label was tested with the real OCR engine. No ten-category recognition accuracy benchmark is claimed.
+
+## Interactive appliance chat, calls and Messages
+
+After setup, `/demo/home` offers typed requests and **Call → Listen → review transcript → Send** for the core team. Optional reply readout uses browser speech. Review calculated timing/cost/carbon, then **Approve & run simulation**. Preview scrubbing never executes tasks. Typed or spoken approval text cannot replace the current-proposal approval button.
+
+No AI API key is required. This is a deterministic command assistant with optional browser voice, not a general-purpose LLM or connected appliance service. Voice support depends on the browser and may use its remote speech provider. See [VOICE.md](VOICE.md).
+
+An optional iMessage pipeline is implemented for an owner-configured BlueBubbles Mac bridge. Without credentials it displays **Not connected**. It has not been provisioned or tested with real message delivery. Its current transport addresses Evie, Bubbles and Chill; the expanded party uses the in-app panel. Pairing, foreground-tab requirements, credentials and approval boundaries are documented in [IMESSAGE.md](IMESSAGE.md). No bridge account or additional MCP is supplied by this repository.

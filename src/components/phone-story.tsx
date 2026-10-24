@@ -12,12 +12,14 @@ const messages = [
   { id: "chill", name: "Chill", text: "And comfort stays protected. Always." },
 ] as const;
 
-function PhoneSequence({ progress }: { progress: number }) {
+function PhoneSequence({ progress, minimal }: { progress: number; minimal: boolean }) {
   const [manualStep, setManualStep] = useState<number | null>(null);
+  const [manualAnchor, setManualAnchor] = useState<number | null>(null);
   const scrollStep = progress < .13 ? 0 : progress < .35 ? 1 : progress < .56 ? 2 : progress < .77 ? 3 : 4;
-  const visible = manualStep ?? scrollStep;
+  // A minimal manual step lasts until the next scroll movement; it never disables the story.
+  const visible = minimal && manualAnchor !== progress ? scrollStep : manualStep ?? scrollStep;
   return <div className="hm-phone-story-content">
-    <header className="hm-phone-story-heading"><p>PART 02 / THE HOME TEAM</p><h2>A little coordination.<br/><em>A happier home.</em></h2><span>Demo conversation · AI connection pending</span></header>
+    <header className="hm-phone-story-heading"><p>PART 02 / THE HOME TEAM</p><h2>A little coordination.<br/><em>A happier home.</em></h2><span>Illustrative conversation · no messages sent</span></header>
     <div className="hm-phone-story-view" style={{ "--phone-turn": `${-9 + progress * 12}deg`, "--phone-tilt": `${4 - progress * 5}deg` } as CSSProperties}>
       <div className="hm-story-phone">
         <div className="hm-story-phone-side" aria-hidden="true"/>
@@ -25,7 +27,7 @@ function PhoneSequence({ progress }: { progress: number }) {
           <div className="hm-story-status" aria-hidden="true"><span>9:41</span><i/><span>▮▮▮ ▰</span></div>
           <div className="hm-story-chat-header"><span aria-hidden="true">⌂</span><div><h3>The home team</h3><p>Evie, Bubbles, Chill & you</p></div><b aria-hidden="true">•••</b></div>
           <div className="hm-story-messages" aria-label="Sample household conversation">
-            {visible === 0 && <div className="hm-story-empty"><span aria-hidden="true">✧</span><p>Your housemates are here.</p><small>Scroll or choose Next message.</small></div>}
+            {visible === 0 && <div className="hm-story-empty"><span aria-hidden="true">✧</span><p>Your housemates are here.</p><small>Scroll to meet your team.</small></div>}
             {messages.map((message, index) => <div key={message.id} className={`hm-story-message hm-story-message-${message.id}${visible > index ? " is-visible" : ""}`} aria-hidden={visible <= index}>
               {message.id !== "you" && <span className="hm-story-portrait"><PixelAppliance id={message.id}/></span>}
               <div><span className="hm-story-sender">{message.name}</span><p>{message.text}</p></div>
@@ -38,12 +40,12 @@ function PhoneSequence({ progress }: { progress: number }) {
     </div>
     <div className="hm-phone-story-controls">
       <div className="hm-phone-story-progress" aria-label={`${visible} of 4 messages visible`}>{messages.map((message, index) => <span key={message.id} className={visible > index ? "is-filled" : ""} aria-hidden="true"/>)}</div>
-      <div className="hm-phone-story-buttons"><button type="button" disabled={visible === 4} onClick={() => setManualStep(Math.min(4, visible + 1))}>Next message <span aria-hidden="true">→</span></button><button type="button" disabled={visible === 4} onClick={() => setManualStep(4)}>Show all</button><button type="button" onClick={() => setManualStep(0)}>Restart</button>{manualStep !== null && <button type="button" onClick={() => setManualStep(null)}>Follow scroll</button>}</div>
+      <div className="hm-phone-story-buttons">{minimal ? <button type="button" onClick={() => { setManualAnchor(progress); setManualStep(visible === 4 ? 0 : visible + 1); }}>{visible === 4 ? "Replay conversation ↺" : "Next message →"}</button> : <><button type="button" disabled={visible === 4} onClick={() => setManualStep(Math.min(4, visible + 1))}>Next message <span aria-hidden="true">→</span></button><button type="button" disabled={visible === 4} onClick={() => setManualStep(4)}>Show all</button><button type="button" onClick={() => setManualStep(0)}>Restart</button>{manualStep !== null && <button type="button" onClick={() => setManualStep(null)}>Follow scroll</button>}</>}</div>
       <p role="status" className="hm-phone-story-announcement">{manualStep !== null ? `${visible} of 4 messages. ${visible ? `${messages[visible - 1].name}: ${messages[visible - 1].text}` : "Conversation restarted. Choose Next message."}` : ""}</p>
     </div>
   </div>;
 }
 
-export function PhoneStory() {
-  return <ScrollStage label="Housemates phone conversation" className="hm-phone-story" travel={1.05}>{progress => <PhoneSequence progress={progress}/>}</ScrollStage>;
+export function PhoneStory({ minimal = false }: { minimal?: boolean }) {
+  return <ScrollStage label="Housemates phone conversation" className={`hm-phone-story${minimal ? " hm-phone-story-minimal" : ""}`} travel={minimal ? 1.35 : 1.05}>{progress => <PhoneSequence progress={progress} minimal={minimal}/>}</ScrollStage>;
 }

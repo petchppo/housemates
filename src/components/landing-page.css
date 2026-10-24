@@ -1,0 +1,62 @@
+.landing-page { color:#382c46; background:#f8f7ee; min-width:0; }
+.landing-nav { min-height:86px; display:flex; align-items:center; justify-content:space-between; gap:18px; padding:17px clamp(20px,5vw,80px); border-bottom:1px solid #dcd5df; }
+.landing-brand { display:inline-flex; align-items:center; gap:9px; font-size:24px; font-weight:800; letter-spacing:-1px; text-decoration:none; }
+.landing-brand>span:first-child { display:grid; place-items:center; width:34px; height:36px; background:#e1eabf; border:1px solid #69734d; border-radius:9px; color:#5e7040; font-size:30px; box-shadow:2px 2px 0 #c8cfb3; }
+.landing-brand .landing-brand-dot { margin-left:-9px; color:#816397; }
+.landing-cta { display:inline-flex; align-items:center; justify-content:center; gap:32px; min-height:48px; padding:13px 22px; border:1px solid #604671; border-radius:999px; background:#6e5280; color:#fffdf4; box-shadow:0 3px 0 #493556; font-size:14px; font-weight:700; text-decoration:none; transition:background .2s,transform .2s; }
+.landing-cta:hover { background:#583e6b; transform:translateY(-1px); }
+.landing-cta:focus-visible,.landing-brand:focus-visible,.landing-footer a:focus-visible { outline:3px solid #7c9360; outline-offset:5px; }
+.landing-eyebrow { font:700 10px/1.6 "Courier New",monospace; letter-spacing:1.4px; color:#7a6b83; }
+.landing-world { background:#f0f1e3; }
+.landing-world-content { height:100%; display:flex; flex-direction:column; align-items:center; padding:45px 0 20px; }
+.landing-world-heading { flex:0 0 auto; position:relative; z-index:2; text-align:center; padding:0 20px; }
+.landing-world-heading h1 { margin:12px 0 13px; font-size:clamp(43px,5.6vw,76px); font-weight:800; letter-spacing:-3.8px; line-height:1.03; }
+.landing-world-heading h1 em { font-style:normal; color:#78618a; }
+.landing-world-heading>p:last-child { color:#756a78; font-size:15px; line-height:1.6; margin:0; }
+.landing-world-model { width:min(1220px,100%); flex:1; min-height:0; margin-top:8px; position:relative; }
+.landing-world-model .hm3d { background:transparent; border-radius:48% 48% 18px 18px; }
+.landing-world-model .hm3d-stage { min-height:0; height:100%; background:radial-gradient(ellipse at center,#dde7d6 0%,#edf0df 60%,#f0f1e3 100%); }
+.landing-world-model .hm3d-stage::before,.landing-world-model .hm3d-stage::after { border-radius:inherit; }
+.landing-world-caption { flex-shrink:0; text-align:center; padding:8px 20px 0; }
+.landing-world-caption p { color:#65566e; margin:0 0 9px; font-size:14px; }
+.landing-world-caption>span { color:#8a7d91; font:700 9px/1.5 "Courier New",monospace; letter-spacing:1.6px; }
+.landing-world-caption b { display:inline-block; margin-left:8px; color:#6e5280; font-size:16px; }
+.landing-page .hm-phone-story { border-block:1px solid #d3c7dd; background-color:#eee8f4; background-image:radial-gradient(#8a719c16 1px,transparent 1px); background-size:10px 10px; }
+.landing-page .hm-phone-story-heading h2 { font-size:clamp(30px,3.4vw,46px); letter-spacing:-1.7px; }
+.landing-page .hm-phone-story-heading>span { font-size:11px; }
+.landing-page .hm-phone-story-controls { margin-top:4px; }
+.landing-page .hm-phone-story-buttons button { padding-inline:20px; }
+.landing-finale { padding:110px 24px 95px; text-align:center; background:radial-gradient(ellipse at top,#e9eecf88,transparent 65%),#faf8f0; }
+.landing-crew { display:flex; gap:25px; justify-content:center; align-items:flex-end; margin:0 0 28px; }
+.landing-crew svg { width:57px; height:64px; image-rendering:pixelated; }
+.landing-crew svg:nth-child(2) { margin-bottom:9px; }
+.landing-finale h2 { font-size:clamp(34px,4.6vw,62px); line-height:1.08; letter-spacing:-2.8px; font-weight:800; margin:18px 0; }
+.landing-finale>p:not(.landing-eyebrow):not(.landing-disclosure) { color:#73627d; font-size:16px; line-height:1.7; margin:0 0 28px; }
+.landing-disclosure { color:#86788e; font-size:11px; line-height:1.8; margin:28px 0 0; }
+.landing-footer { padding:24px clamp(20px,5vw,80px); display:flex; flex-wrap:wrap; justify-content:space-between; gap:15px; color:#817389; font-size:11px; border-top:1px solid #e0d9e3; }
+.landing-footer a { text-decoration:underline; text-underline-offset:4px; }
+@media(max-width:640px) {
+  .landing-nav { min-height:76px; padding:14px 18px; gap:10px; }
+  .landing-brand { font-size:20px; gap:7px; }
+  .landing-brand>span:first-child { width:29px; height:31px; font-size:26px; }
+  .landing-cta { gap:14px; padding:12px 16px; font-size:12px; }
+  .landing-world-content { padding-top:56px; padding-bottom:22px; }
+  .landing-world-heading h1 { font-size:clamp(39px,9.8vw,58px); letter-spacing:-2px; margin-block:12px; }
+  .landing-world-heading>p:last-child { font-size:13px; max-width:280px; margin-inline:auto; }
+  .landing-world-model { margin-top:16px; }
+  .landing-world-model .hm3d { border-radius:25% 25% 0 0; }
+  .landing-world-caption p { font-size:12px; }
+  .landing-world .landing-eyebrow { font-size:9px; letter-spacing:.8px; }
+  .landing-page .hm-phone-story-heading h2 { font-size:30px; }
+  .landing-finale { padding:85px 20px 70px; }
+  .landing-finale h2 { letter-spacing:-1.7px; }
+  .landing-finale>p:not(.landing-eyebrow):not(.landing-disclosure) { font-size:14px; max-width:260px; margin-inline:auto; }
+}
+@media(max-width:360px) { .landing-nav { padding-inline:14px; }.landing-brand { font-size:18px; }.landing-cta { gap:8px; padding-inline:13px; }.landing-page .hm-phone-story-heading h2 { font-size:26px; } }
+@media(prefers-reduced-motion:reduce),(max-height:620px) {
+  .landing-world-content { height:auto; padding-top:42px; }
+  .landing-world-model { flex:none; height:460px; }
+  .landing-world-caption>span { display:none; }
+  .landing-cta { transition:none; }
+}
+@media(max-height:620px) and (min-width:641px) { .landing-world-heading h1 { font-size:48px; }.landing-world-model { height:400px; } }

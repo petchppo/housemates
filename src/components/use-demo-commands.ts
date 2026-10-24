@@ -80,6 +80,7 @@ export function useDemoCommands(scenario: DemoScenario, mode: OptimizationMode) 
     append("user",text.slice(0,1200),source);
     const result=requestDemoCommand(current.current,scenario,appliance,text);
     commit(result.session);append(appliance,result.reply,source);
+    return result.reply;
   }
   function approve(id:string) {
     if(!ready||context.current!==initial.contextFingerprint)return;
@@ -105,7 +106,7 @@ export function useDemoCommands(scenario: DemoScenario, mode: OptimizationMode) 
     const next=resetDemoCommandSession(current.current,scenario);current.current=next;setSession(next);
     try{localStorage.removeItem(STORAGE_KEY);setStorageNotice("New simulation day. Previous run cleared on this browser.");}
     catch{setStorageNotice("New day for this session only. Storage could not clear the previous run; it may return after refresh.");}
-    append("housemates","A new simulated day starts at 18:00. Ask for a plan, review the projection, then approve it. No completed savings have been carried into this new run.");
+    append("housemates",`A new simulated day starts at hour ${next.executionHour}. Ask for a plan, review the projection, then approve it. No completed savings have been carried into this new run.`);
   }
   return {session,messages,ready,storageNotice,send,approve,reject,pause,finishSimulation,reset};
 }

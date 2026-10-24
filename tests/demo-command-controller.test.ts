@@ -87,7 +87,8 @@ test("actual command controller has no timer or stored transcript before approva
   const h = harness();
   let view = h.render();
   assert.equal(view.ready, true); assert.equal(h.writes(), 0); assert.equal(h.timers.size, 0);
-  view.send("evie", "Find a cheaper plan", "voice"); view = h.render();
+  const reply = view.send("evie", "Find a cheaper plan", "voice"); view = h.render();
+  assert.equal(reply, view.messages.at(-1)!.text, "Messaging adapters return the exact computed browser reply");
   const id = view.session.pending!.id;
   assert.equal(view.session.status, "idle"); assert.equal(view.messages.at(-2)!.source, "voice");
   for (let i = 0; i < 5; i++) view = h.render();

@@ -110,3 +110,26 @@ Acceptance: click scene/primary/Pip completion actions; preserve objective and s
 Lead owns dashboard/controller integration, preview/execution separation, persistence adapter, browser journeys, documentation and final gates. Energy specialist owns pure command/session engine and domain/controller regressions. Voice specialist owns native speech lifecycle and regression tests plus independent command review. Conversation specialist owns chat/proposal/call UI, actual-component tests and independent screenshot review.
 
 Self-correction found and repaired stale proposal IDs across household changes, source tags suppressing readout, externally changed appliance selections retaining an old call, preview labels implying execution, and Pip covering call controls. Actual browser checks and full gates are recorded in PROGRESS.md. No deployment or external messaging service was configured.
+
+## Landing, scan and messaging integration — active
+
+Lead owns shared dashboard/controller integration, protocol review, browser journeys, documentation and final gates. Landing specialist owns homepage/visual story/phone and presentation-only renderer mode. Scanning specialist owns capture/recruitment helpers, scan route and onboarding integration. Messaging specialist owns optional Mac-bridge adapter, authenticated routes, connection UI and tests. Agents implement → scoped checks → independent review → concrete repairs → recheck; root runs combined checks and captures the actual site before acceptance. Ownership prevents overlapping writes.
+
+Preserve existing application workflows and no connected-device claims. If external messaging credentials or bridge setup are missing, ship the tested integration with a visible unconfigured status and exact setup instructions. Do not activate or send real messages during fixture verification.
+
+## Expanded party and live forecast integration — active
+
+Lead integrates source, fixes daytime parsing and runs combined checks/browser journeys. Scanning specialist owns catalog, OCR, recruitment and documentation; messaging specialist reviews parser/weather and adds integration regressions; landing specialist reviews rendered mobile/desktop worlds and pixel dialogue. Preserve concurrent game-layout edits from the user's other session.
+
+Acceptance: review specs → recruit → save → return home → change daylight window → inspect proposal → explicitly approve → complete simulated task; confirm source-labeled live forecast and distinct day-two cooling; verify protected appliances and midnight/fractional sessions. Capture actual responsive UI, repair concrete findings, rerun lint/typecheck/tests/build, and record limits without claiming physical camera or live iMessage verification.
+
+## Focused scanner review and consumer polish — October 24, 2026
+
+Root owns compact spec steps, scan-page/onboarding reveal integration and actual browser journeys. Photo reviewer owns actual CLIP fixture evaluation and guarded interpretation; OCR reviewer owns actual Tesseract/spec-sheet evaluation and conservative parser repairs; visual reviewer owns capture/reveal visuals, worker content-pass integration, and independent screenshot review. Run actual images → inspect errors → repair → repeat/regression tests → browser walkthrough → independent visual review → full checks. Do not edit other sessions' unrelated dialogue, graph or messaging work.
+
+- Local forecast picker follow-up complete: explicit city/county search/dropdown, trusted place-ID weather, saved-location validation, agent bug repairs, desktop/mobile review. Final lint/typecheck and354tests pass; shared build/checkpoint stays with other session.
+
+
+### Broad recognition correction
+
+Replace expanded-catalog CLIP only after the measured SigLIP comparison; retain legacy CLIP. Validate independent sigmoid outputs before converting to relative odds, preserve the frozen raw-match floor and explicit category/specification review, and keep photo authenticity outside the model contract. Evaluate real and adversarial fixtures, distinguish raw ranking from accepted suggestions, and report manual review honestly. Physical phone/WASM accuracy and broad consumer coverage remain unverified. See SCAN-PHOTO-EVALUATION.md for the 60-image evidence.

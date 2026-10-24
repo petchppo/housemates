@@ -35,6 +35,19 @@ test("chapter boundaries, Chill-only guidance and every Show me target remain co
   assert.equal(getTutorialChapter({ ...context, step: 999 }).index, 4);
 });
 
+test("expanded-only teams receive contextual guidance without treating protected appliances as flexible", () => {
+  const context: TutorialContext = { step: 4, regionId: "tokyo", residenceType: "apartment", applianceIds: ["spin"] };
+  const flexible = getTutorialChapter(context).pages[0].text;
+  assert.match(flexible, /Spin/);
+  assert.match(flexible, /Choose a planning style/);
+  assert.doesNotMatch(flexible, /no teammates yet|Add Evie/);
+  const protectedOnly = getTutorialChapter({ ...context, applianceIds: ["frost", "ember"] }).pages[0].text;
+  assert.match(protectedOnly, /Frost, Ember|Ember, Frost/);
+  assert.match(protectedOnly, /fixed or protected/);
+  assert.doesNotMatch(protectedOnly, /Choose a planning style/);
+  assert.match(getTutorialPrompt({ ...context, step: 3 }), /team is taking shape/);
+});
+
 test("city, residence, team and chapter changes preserve the mascot's React reconciliation identity", () => {
   // Keys on any ancestor destroy descendant component instances. Walk the actual
   // JSX tree with React's key/position identity rules, including function children.
@@ -239,4 +252,85 @@ test("mascot props reuse one renderer and true unmount explicitly releases its W
   assert.equal(disposed, 1); assert.equal(released, 1); assert.equal(disconnected, 2); assert.equal(frames.size, 0);
   assert.ok(events.indexOf("remove-listener") < events.indexOf("release"), "Intentional cleanup must not announce a context-loss failure");
   assert.ok(events.indexOf("dispose") < events.indexOf("release"));
+});
+
+
+test("docked guide reserves its parent row, never positions a portal, and advances only explicitly", () => {
+  const effects: (() => unknown)[] = [];
+  const navigations: string[] = [];
+  const testModule: { exports: unknown } = { exports: {} };
+  let portals = 0;
+  runInNewContext(source("src/components/tutorial-npc.tsx"), {
+    module: testModule, exports: testModule.exports,
+    require(name: string) {
+      if (name === "react") return { useId: () => "dock-guide", useState: (initial: unknown) => [initial, () => {}], useEffect: (effect: () => unknown) => effects.push(effect), useRef: (current: unknown) => ({ current }), useSyncExternalStore: () => true };
+      if (name === "react-dom") return { createPortal: () => { portals++; } };
+      if (name === "react/jsx-runtime") return { jsx, jsxs: jsx };
+      if (name === "@/data/tutorial-dialogue") return { getTutorialChapter, getTutorialPrompt };
+      return {};
+    },
+  });
+  const npc = (testModule.exports as { TutorialNpc: (props: Record<string, unknown>) => Element }).TutorialNpc;
+  const tree = npc({ step: 2, regionId: "california", residenceType: "apartment", applianceIds: ["evie"], presentation: "dock", prompt: "Review your chosen forecast source.", advanceLabel: "Meet my team", onBack: () => navigations.push("back"), onAdvance: () => navigations.push("advance"), onNavigate: (target: string) => navigations.push(target) });
+  // No document/window/ResizeObserver are provided: dock rendering and effects must need none.
+  effects.forEach(effect => effect());
+  assert.equal(portals, 0);
+  assert.equal(tree.props.style, undefined);
+  assert.match(String(tree.props.className), /hm-tutorial-dock/);
+  const nodes: Element[] = [];
+  function walk(node: unknown) {
+    if (Array.isArray(node)) { node.forEach(walk); return; }
+    if (!node || typeof node !== "object" || !("props" in node)) return;
+    nodes.push(node as Element); walk((node as Element).props.children);
+  }
+  walk(tree);
+  assert.equal(navigations.length, 0);
+  const advance = nodes.find(node => node.props.className === "hm-tutorial-advance");
+  const back = nodes.find(node => node.props.className === "hm-tutorial-back");
+  assert.ok(advance); assert.ok(back);
+  (advance.props.onClick as () => void)(); (back.props.onClick as () => void)();
+  assert.deepEqual(navigations, ["advance", "back"]);
+  assert.ok(nodes.some(node => node.type === "p" && Array.isArray(node.props.children) && node.props.children[0] === "Review your chosen forecast source."));
+});
+
+test("completed home can return to docked setup without hiding dialogue or remounting Pip", () => {
+  const values: unknown[] = [];
+  let cursor = 0, advances = 0;
+  const portrait = () => null;
+  const testModule: { exports: unknown } = { exports: {} };
+  runInNewContext(source("src/components/tutorial-npc.tsx"), {
+    module: testModule, exports: testModule.exports,
+    require(name: string) {
+      if (name === "react") return { useId: () => "return-guide", useEffect: () => {}, useRef: (current: unknown) => ({ current }), useSyncExternalStore: () => true,
+        useState(initial: unknown) { const index = cursor++; if (!(index in values)) values[index] = initial; return [values[index], (next: unknown) => { values[index] = typeof next === "function" ? next(values[index]) : next; }]; } };
+      if (name === "react/jsx-runtime") return { jsx, jsxs: jsx };
+      if (name === "./guide-mascot") return { GuideMascot: portrait };
+      if (name === "@/data/tutorial-dialogue") return { getTutorialChapter, getTutorialPrompt };
+      return {};
+    },
+  });
+  const npc = (testModule.exports as { TutorialNpc: (props: Record<string, unknown>) => Element }).TutorialNpc;
+  function render(completed: boolean, step: number) {
+    cursor = 0;
+    const nodes: { element: Element; path: string }[] = [];
+    function walk(node: unknown, path: string) {
+      if (Array.isArray(node)) { node.forEach((child, index) => walk(child, `${path}/${index}`)); return; }
+      if (!node || typeof node !== "object" || !("props" in node)) return;
+      const element = node as Element;
+      const here = `${path}/${typeof element.type === "function" ? element.type.name : element.type}:${element.key ?? "unkeyed"}`;
+      nodes.push({ element, path: here }); walk(element.props.children, here);
+    }
+    walk(npc({ completed, step, presentation: "dock", regionId: "california", residenceType: "apartment", applianceIds: ["evie"], onNavigate() {}, onAdvance() { advances++; } }), "root");
+    return nodes;
+  }
+  const home = render(true, 4);
+  const editing = render(false, 0);
+  for (const nodes of [home, editing]) assert.equal(nodes.find(node => node.element.props.id === "return-guide-dialogue")?.element.props.hidden, false);
+  assert.equal(home.find(node => node.element.type === portrait)?.path, editing.find(node => node.element.type === portrait)?.path);
+  const advance = editing.find(node => node.element.props.className === "hm-tutorial-advance")?.element;
+  assert.ok(advance); assert.equal(advances, 0); (advance.props.onClick as () => void)(); assert.equal(advances, 1);
+  const helpButton = editing.find(node => node.element.type === "button" && node.element.props["aria-controls"] === "return-guide-help")?.element;
+  assert.ok(helpButton); (helpButton.props.onClick as () => void)();
+  const help = render(false, 0).find(node => node.element.props.id === "return-guide-help")?.element;
+  assert.ok(help); assert.equal(help.props.hidden, false); assert.equal(help.props.tabIndex, 0); assert.equal(help.props.role, "region"); assert.equal(help.props["aria-label"], "Pip’s guide pages");
 });

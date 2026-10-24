@@ -21,7 +21,7 @@ const timeSource = "(?:(?:day\\s*[12]|today|tomorrow)\\s*(?:at\\s*)?)?(?:\\d{1,2
 const timesIn = (text: string) => text.match(new RegExp(timeSource, "g")) ?? [];
 const clarify = (message: string): HouseholdIntent => ({ kind: "clarify", message });
 
-function parseTime(text: string, anchor?: number): number | null {
+function parseTime(text: string, anchor?: number, dayConvention: "overnight" | "day-one" = "overnight"): number | null {
   const days = new Set((text.match(/\b(?:day\s*[12]|today|tomorrow)\b/g) ?? []).map(day => /day\s*1|today/.test(day) ? 1 : 2));
   if (days.size > 1) return null;
   let clock: number;
@@ -36,11 +36,12 @@ function parseTime(text: string, anchor?: number): number | null {
   if (/day\s*2|tomorrow/.test(text)) return clock + 24;
   if (anchor !== undefined) return clock < anchor % 24 ? clock + Math.floor(anchor / 24) * 24 + 24 : clock + Math.floor(anchor / 24) * 24;
   // This evening + next morning is the demo's explicit default day convention.
-  return clock < 12 ? clock + 24 : clock;
+  return dayConvention === "overnight" && clock < 12 ? clock + 24 : clock;
 }
 
 /** A deliberately bounded parser: ambiguous requests are clarified, not guessed. */
-export function parseHouseholdIntent(input: string): HouseholdIntent {
+export function parseHouseholdIntent(input: string, options: { dayConvention?: "overnight" | "day-one" } = {}): HouseholdIntent {
+  const readTime = (value: string, anchor?: number) => parseTime(value, anchor, options.dayConvention);
   const text = input.toLowerCase().replace(/[’‘]/g, "'").replace(/[–—]/g, "-").replace(/\s+/g, " ").trim();
   if (!text) return clarify("Tell the household what you would like to plan.");
   if (text.length > 1200) return clarify("Please keep each planning request under 1,200 characters so I can check every constraint.");
@@ -99,19 +100,19 @@ export function parseHouseholdIntent(input: string): HouseholdIntent {
         return clarify("Please give a whole-hour time with AM/PM, for example ‘Evie by 7 AM’ or ‘Bubbles between 8 PM and 9 PM’.");
       continue;
     }
-    if (times.some(time => parseTime(time) === null)) return clarify("Use whole hours from 1–12 with AM or PM. This scheduler does not accept minute-level deadlines.");
+    if (times.some(time => readTime(time) === null)) return clarify("Use whole hours from 1–12 with AM or PM. This scheduler does not accept minute-level deadlines.");
     const window = clause.match(new RegExp(`(?:between|from)\\s+(${timeSource})\\s+(?:and|to|-)\\s+(${timeSource})`));
     if (window) {
       if (times.length !== 2) return clarify("Please change one start window or one deadline per appliance per message.");
-      const earliestHour = parseTime(window[1])!;
-      const latestHour = parseTime(window[2], earliestHour)!;
+      const earliestHour = readTime(window[1])!;
+      const latestHour = readTime(window[2], earliestHour)!;
       if (latestHour >= 48) return clarify("That window exceeds the two-day planning horizon. Choose Day 1 or Day 2 hours.");
       changes.push({ applianceId, earliestHour, latestHour });
       notes.push(`${applianceId === "evie" ? "Evie" : "Bubbles"}’s window constrains start times; the complete session must still meet its deadline.`);
       continue;
     }
     if (times.length !== 1) return clarify("Please change one start window or one deadline per appliance per message.");
-    const hour = parseTime(times[0])!;
+    const hour = readTime(times[0])!;
     const noAfter = /(?:don't|do not|not|never|no).*\b(?:after|past)\b/.test(clause);
     const noBefore = /(?:don't|do not|not|never|no).*\bbefore\b/.test(clause);
     if (!noBefore && /\bstart(?:s|ing)?\b/.test(clause) && (noAfter || /\b(by|before|no later than)\b/.test(clause))) {

@@ -1,0 +1,19 @@
+.hm-messages-connect { position:relative; margin:28px 0; padding:26px; border:1px solid #d3c8df; border-radius:23px; background:#f8f5ef; color:#44354f; }
+.hm-messages-kicker { margin:0 0 10px; font:700 10px/1.5 "Courier New",monospace; letter-spacing:1.5px; color:#80628f; }
+.hm-messages-connect h2 { margin:0; font-size:clamp(23px,3vw,30px); font-weight:750; letter-spacing:-.7px; }
+.hm-messages-connect p { max-width:740px; font-size:13px; line-height:1.7; }
+.hm-messages-connect .hm-messages-kicker { font-size:10px; }
+.hm-messages-badge { display:inline-block; margin:12px 0; padding:6px 10px; border:1px solid #d1c6dc; border-radius:8px; background:#ede7f2; font:700 10px/1.5 "Courier New",monospace; }
+.hm-messages-badge.is-paired { background:#e7edda; border-color:#b8c69b; }
+.hm-messages-notice { margin:0 0 16px; }
+.hm-messages-connect button { min-height:44px; padding:10px 17px; border:1px solid #8b70a0; border-radius:12px; background:#715488; color:white; font-size:12px; font-weight:700; cursor:pointer; }
+.hm-messages-connect button:disabled { background:#e9e3ed; border-color:#d2c8dc; color:#8b8091; cursor:not-allowed; }
+.hm-messages-connect button:focus-visible,.hm-messages-connect summary:focus-visible { outline:3px solid #9878b0; outline-offset:4px; }
+.hm-messages-connect details { margin-top:18px; padding-top:15px; border-top:1px solid #ded5e4; font-size:12px; line-height:1.7; }
+.hm-messages-connect summary { cursor:pointer; min-height:32px; font-weight:700; }
+.hm-messages-connect ol { margin:12px 0; padding-left:20px; list-style:decimal; }
+.hm-messages-connect li { margin-bottom:8px; }
+.hm-messages-pair { margin-bottom:18px; padding:16px; border:1px solid #d8cedf; border-radius:12px; background:#fffdf8; overflow-wrap:anywhere; }
+.hm-messages-pair p { margin:0 0 10px; }
+.hm-messages-pair code { display:block; padding:12px; margin:10px 0; background:#eee8f4; border-radius:8px; font-size:15px; white-space:normal; }
+@media(max-width:480px) { .hm-messages-connect { padding:20px 16px; } }

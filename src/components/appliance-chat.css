@@ -45,3 +45,192 @@
 @media(max-width:900px) { .apc-body { grid-template-columns:minmax(0,1fr) 270px; }.apc-header { flex-direction:column; gap:14px; }.apc-comparison strong { font-size:21px; } }
 @media(max-width:650px) { .apc-header { padding:22px 18px 18px; }.apc-header h2 { font-size:25px; }.apc-tabs { padding:0 13px 14px; gap:5px; }.apc-tabs button { padding:10px 6px; gap:5px; flex-direction:column; text-align:center; }.apc-tabs svg { width:32px; height:32px; }.apc-tabs small { display:none; }.apc-tabs strong { font-size:12px; }.apc-tab-arrow { display:none; }.apc-body { grid-template-columns:1fr; }.apc-channel-heading { padding:9px 15px; }.apc-messages { padding:16px; height:320px; min-height:220px; }.apc-message>p { font-size:13px; }.apc-suggestions { padding:12px 14px 0; }.apc-suggestions button { min-height:44px; }.apc-composer { padding:14px; }.apc-composer textarea,.apc-transcript textarea { font-size:16px; }.apc-composer>div { gap:6px; }.apc-composer button { min-width:59px; }.apc-call-panel { border-left:0; border-top:1px solid #ded3e6; padding:23px 22px; }.apc-call-portrait { width:96px; height:96px; margin:12px auto; }.apc-call-copy { max-width:390px; margin:14px auto; }.apc-open-call { max-width:310px; }.apc-privacy { font-size:12px; }.apc-proposal { padding:21px 17px; }.apc-comparison { grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }.apc-comparison strong { font-size:23px; }.apc-proposal h3 { font-size:21px; }.apc-plan-schedules li { flex-wrap:wrap; }.apc-plan-schedules strong { font-size:10px; }.apc-approval-actions { flex-direction:column; }.apc-approval-actions button { min-height:48px; }.apc-execution { padding:17px; } }
 @media(prefers-reduced-motion:reduce) { .apc-call-pulsing i:first-child { animation:none; } }
+
+/* Handheld RPG communicator; all commands remain explicit and keyboard accessible. */
+.apc-shell { --apc-ink:#303d3a; --apc-muted:#64736a; --apc-purple:#426f60; border:3px solid #385954; border-radius:4px; box-shadow:0 4px 0 #c6cdb7,inset 0 0 0 2px #eef0dc; background:#fffbe9; }
+.apc-header { background:#e8eed6; border-bottom:2px solid #b9cbb4; }
+.apc-header h2,.apc-call-panel h3,.apc-proposal h3 { font-family:"Courier New",monospace; font-weight:800; letter-spacing:-1px; }
+.apc-eyebrow { color:#527564; letter-spacing:.13em; }
+.apc-local-badge { border:2px solid #779174; border-radius:2px; background:#f8f8df; color:#48674f; box-shadow:inset 0 0 0 1px #d0dfb8; }
+.apc-local-badge i,.apc-call-status i { border-radius:0; }
+.apc-tabs { padding-top:17px; background:#faf8e9; border-bottom:2px solid #bacbb7; }
+.apc-tabs button { border:2px solid #a9baa3; border-radius:3px; background:#eff1de; box-shadow:inset 0 0 0 2px #fffbea; }
+.apc-tabs button[aria-pressed="true"] { background:#496e60; border-color:#294c45; box-shadow:inset 0 0 0 2px #88a087; color:#fffbe9; }
+.apc-tabs button[aria-pressed="true"] small,.apc-tabs button[aria-pressed="true"] .apc-tab-arrow { color:#e6efd0; }
+.apc-tabs strong { font-family:"Courier New",monospace; }
+.apc-tabs svg { background:#f8f7e5; border:1px solid #acbd9f; padding:3px; width:39px; height:39px; }
+.apc-channel-heading { background:#e2e9cd; border-bottom:2px solid #b8c9b0; }
+.apc-channel-heading button { border:2px solid #6d8e76; border-radius:2px; background:#f9f8e5; color:#365d4f; font-family:"Courier New",monospace; }
+.apc-messages { background:linear-gradient(#a5bba810 1px,transparent 1px) 0 0/100% 7px,#fffbed; scrollbar-color:#9bab8e #eff0de; }
+.apc-message-author { color:#54715d; text-transform:uppercase; }
+.apc-message-author svg { width:25px; height:25px; image-rendering:pixelated; }
+.apc-message>p { background:#fffdf0; border:3px solid #638371; border-radius:2px; box-shadow:inset 0 0 0 2px #dbe3c7,2px 3px 0 #b4c3a836; color:#34453d; }
+.apc-message-user>p { background:#e3ecd0; border-color:#829773; border-radius:2px; color:#33452f; box-shadow:inset 0 0 0 2px #f7f8e5,2px 3px 0 #b4c3a836; }
+.apc-suggestions button { min-height:44px; border:2px solid #9aaf91; border-radius:2px; background:#edf1da; color:#496447; font-family:"Courier New",monospace; font-weight:700; }
+.apc-suggestions button:not(:disabled):hover { background:#dae8bf; border-color:#587650; }
+.apc-composer { background:#f6f6e7; }
+.apc-composer label,.apc-transcript>label { color:#49674f; font-family:"Courier New",monospace; font-weight:700; }
+.apc-composer textarea,.apc-transcript textarea { border:2px solid #8ea183; border-radius:2px; box-shadow:inset 2px 2px 0 #dfe6cf; background:#fffff4; }
+.apc-composer button,.apc-primary { border:2px solid #30584a; border-radius:2px; box-shadow:inset 0 0 0 1px #6f9780; background:#426f60; color:#fffceb; font-family:"Courier New",monospace; }
+.apc-call-panel { background:#e6ebd3; border-left:2px solid #a9bea5; }
+.apc-call-portrait i { border:3px solid #51735f; border-radius:3px; opacity:1; background:#cbdcb9; }
+.apc-call-portrait i:nth-child(2) { border:2px solid #8eab7b; border-radius:1px; background:#f5f5dc; opacity:1; }
+.apc-call-portrait svg { filter:drop-shadow(3px 4px 0 #718e5933); }
+.apc-call-caption,.apc-call-status,.apc-readout,.apc-interim { color:#526b54; }
+.apc-privacy { border:2px solid #9bb18d; border-radius:2px; background:#fbfae8; color:#4f6352; }
+.apc-secondary { border:2px solid #819b75; border-radius:2px; background:#fbfae8; color:#46623f; font-family:"Courier New",monospace; }
+.apc-end-call { border:2px solid #ac8074; border-radius:2px; background:#f5e6d8; color:#84584c; font-family:"Courier New",monospace; }
+.apc-transcript { border-top:2px solid #a5bc96; }
+.apc-voice-error { border:2px solid #bc8b72; border-radius:2px; background:#fff0dd; }
+.apc-execution { background:#e4ecd0; border-top:3px solid #839b74; }
+.apc-execution p { text-transform:uppercase; font-family:"Courier New",monospace; letter-spacing:1px; }
+.apc-proposal { background:#faf9e7; border-top:3px solid #819777; }
+.apc-mode { border:2px solid #90a77c; border-radius:2px; background:#e8efcf; font-family:"Courier New",monospace; }
+.apc-comparison strong { color:#45694f; }
+.apc-tradeoff,.apc-constraints { color:#526d49; }
+.apc-plan-schedules { border-top:2px solid #c3d0b5; }.apc-plan-schedules li { border-bottom:1px solid #c3d0b5; }
+.apc-shell button:focus-visible,.apc-shell textarea:focus-visible,.apc-shell input:focus-visible,.apc-shell summary:focus-visible { outline:3px solid #b98b4c; outline-offset:3px; }
+@media(max-width:640px) { .apc-header h2 { font-size:24px; }.apc-call-panel { border-left:0; border-top:2px solid #a9bea5; }.apc-tabs button { padding:10px 7px; }.apc-tabs svg { width:34px; height:34px; }.apc-composer textarea,.apc-transcript textarea { font-size:16px; }.apc-message>p { padding:11px 12px; } }
+
+/* World dialogue dock: the latest reply stays beside its speaker; details open on demand. */
+.apc-shell.apc-dock {
+ --apc-ink:#203e39; --apc-muted:#586856; width:100%; height:100%; min-height:0; margin:0;
+ display:grid; grid-template-columns:100px minmax(0,1fr); gap:20px; padding:14px 22px;
+ border:3px solid #203e39; border-radius:2px; overflow:visible; background:#fff9df;
+ box-shadow:inset 0 0 0 3px #fffdf1,inset 0 0 0 6px #a6b49a,0 4px 0 #203e39;
+ font-family:"Courier New",monospace;
+}
+.apc-dock-portrait { align-self:center; display:flex; flex-direction:column; align-items:center; gap:10px; }
+.apc-dock-portrait>svg { width:92px; height:92px; padding:8px; background:#e2e9c9; border:2px solid #809673; box-shadow:inset 0 0 0 4px #f4f5db; image-rendering:pixelated; }
+.apc-dock-portrait>span { color:#586856; font-size:9px; letter-spacing:1px; }
+.apc-dock-main { min-width:0; min-height:0; display:grid; grid-template-rows:28px minmax(34px,1fr) auto 42px; gap:6px; }
+.apc-dock-heading { display:flex; align-items:center; gap:12px; min-width:0; }
+.apc-dock-heading h2 { font-size:15px; letter-spacing:1.5px; text-transform:uppercase; margin:0; font-weight:800; }
+.apc-dock-heading>span { flex:1; color:#586856; font-size:9px; letter-spacing:.5px; }
+.apc-dock .apc-dock-heading button { font:700 10px/1.2 "Courier New",monospace; color:#365749; min-height:28px; padding:4px 8px; border:1px solid #9aaa8a; background:#f0f0d6; }
+.apc-dock-reply { min-width:0; min-height:0; overflow-y:auto; scrollbar-width:thin; scrollbar-color:#809673 transparent; padding-right:8px; }
+.apc-dock-reply p { margin:0; color:#203e39; font:14px/1.6 "Courier New",monospace; overflow-wrap:anywhere; white-space:pre-wrap; }
+.apc-dock-commands { display:flex; gap:6px; flex-wrap:wrap; }
+.apc-dock .apc-dock-commands button { min-height:32px; padding:5px 10px; border:1px solid #a4b08f; background:#f0efd4; color:#365749; font:700 11px/1.3 "Courier New",monospace; }
+.apc-dock .apc-dock-commands button>span:first-child { color:#64815c; padding-right:5px; }
+.apc-dock .apc-dock-commands .apc-dock-review { margin-left:auto; background:#527d68; color:#fff9df; border:2px solid #203e39; }
+.apc-dock .apc-dock-commands .apc-dock-review>span { color:#fff9df; }
+.apc-composer.apc-dock-composer { padding:0; background:transparent; min-width:0; }
+.apc-dock-composer>div { height:42px; gap:7px; }
+.apc-dock-composer textarea { font:13px/1.5 "Courier New",monospace; min-height:42px; height:42px; resize:none; padding:9px 11px; border:1px solid #8e9e7f; box-shadow:inset 2px 2px 0 #e2e7ca; }
+.apc-dock .apc-dock-composer button { min-height:42px; min-width:75px; padding:4px 12px; font-size:12px; background:#527d68; }
+.apc-dock .apc-dock-composer button span { font-size:14px; }
+.apc-sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; border:0; }
+.apc-dock-dialog { width:min(700px,calc(100vw - 28px)); max-height:calc(100dvh - 32px); margin:auto; padding:0; overflow-y:auto; border:3px solid #203e39; border-radius:2px; box-shadow:inset 0 0 0 3px #b8c8a5,0 10px 0 #203e3944; background:#fff9df; color:#203e39; }
+.apc-dock-dialog::backdrop { background:#193c35a6; backdrop-filter:blur(3px); }
+.apc-dock-dialog-heading { position:sticky; top:0; z-index:2; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 16px; border-bottom:2px solid #8fa580; background:#e6ebcf; }
+.apc-dock-dialog-heading h2 { margin:0; font:700 15px/1.4 "Courier New",monospace; }
+.apc-dock-dialog-heading button { min-height:40px; padding:7px 12px; border:2px solid #72906b; background:#fff9df; color:#203e39; font:700 12px "Courier New",monospace; }
+.apc-dock-dialog>.apc-note { padding:0 18px 14px; }
+.apc-dock-dialog .apc-messages { height:min(52dvh,440px); min-height:140px; }
+.apc-dock-dialog .apc-call-panel { border:0; padding:18px 24px; }
+.apc-dock-dialog .apc-call-portrait { width:80px; height:80px; margin:8px auto; }
+.apc-dock-dialog .apc-call-portrait svg { width:52px; height:52px; }
+.apc-dock-dialog .apc-proposal { border-top:0; }
+.apc-dock-dialog .apc-call-panel h3 { font-size:20px; }
+.apc-dock-dialog .apc-privacy { margin:12px 0; }
+.apc-dock-dialog .apc-call-caption { margin-top:7px; }
+.apc-dock button:focus-visible,.apc-dock textarea:focus-visible,.apc-dock [tabindex]:focus-visible { outline:3px solid #b1823c; outline-offset:2px; }
+@media(max-width:650px), (max-height:550px) and (min-width:600px) {
+ .apc-shell.apc-dock { grid-template-columns:46px minmax(0,1fr); grid-template-rows:26px minmax(40px,1fr) auto 44px; gap:6px 10px; padding:11px; }
+ .apc-dock-main { display:contents; }
+ .apc-dock-portrait { grid-column:1; grid-row:1 / 3; align-self:start; margin-top:8px; }
+ .apc-dock-portrait>svg { width:46px; height:58px; padding:3px; box-shadow:inset 0 0 0 2px #f4f5db; }
+ .apc-dock-portrait>span { display:none; }
+ .apc-dock-heading,.apc-dock-reply { grid-column:2; }
+ .apc-dock-heading { gap:5px; }
+ .apc-dock-heading h2 { font-size:12px; letter-spacing:1px; flex:1; }
+ .apc-dock-heading>span { display:none; }
+ .apc-dock .apc-dock-heading button { padding:4px 7px; min-height:28px; }
+ .apc-dock-reply p { font-size:12px; line-height:1.55; }
+ .apc-dock-commands { grid-column:1 / -1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; }
+ .apc-dock-commands:has(.apc-dock-review) { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .apc-dock .apc-dock-commands button { min-height:32px; padding:5px 4px; font-size:10px; white-space:normal; min-width:0; }
+ .apc-dock .apc-dock-commands button>span:first-child { padding-right:3px; }
+ .apc-dock .apc-dock-commands .apc-dock-review { margin:0; }
+ .apc-dock-composer { grid-column:1 / -1; }
+ .apc-dock-composer>div,.apc-dock-composer textarea { height:44px; min-height:44px; }
+ .apc-dock-composer textarea { font-size:16px; padding:8px; }
+ .apc-dock .apc-dock-composer button { min-height:44px; min-width:60px; padding:4px 8px; }
+ .apc-dock-dialog { width:calc(100vw - 20px); max-height:calc(100dvh - 20px); }
+ .apc-dock-dialog-heading { padding:7px 10px; }
+ .apc-dock-dialog-heading h2 { font-size:13px; }
+ .apc-dock-dialog .apc-call-panel { padding:12px; }
+ .apc-dock-dialog .apc-comparison { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+.apc-dock .apc-dock-reply { display:grid; grid-template-columns:minmax(0,1fr) 48px; gap:5px; overflow:hidden; padding-right:0; }
+.apc-dock .apc-dock-reply p { min-height:0; overflow-y:auto; scrollbar-width:thin; }
+.apc-dock .apc-dock-next { position:static; align-self:end; justify-self:end; padding:5px; min-height:32px; min-width:48px; border:0; background:#fff9df; color:#365749; box-shadow:none; font:700 11px/1.2 'Courier New',monospace; }
+.apc-dock .apc-dock-next>span { font-size:15px; }
+@media(max-width:650px), (max-height:550px) and (min-width:600px) {
+ .apc-dock .apc-dock-heading h2 { flex:0 1 auto; font-size:11px; }
+ .apc-dock .apc-dock-heading>span { display:block; flex:1; font-size:7px; line-height:1.4; letter-spacing:0; }
+ .apc-dock .apc-dock-heading button { font-size:9px; padding:4px 5px; }
+ .apc-dock .apc-dock-reply { grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr) auto; padding:0; gap:0; }
+ .apc-dock .apc-dock-next { min-height:22px; height:22px; padding:2px 4px; font-size:9px; background:#fff9df; }
+}
+@media(max-width:350px) { .apc-dock .apc-dock-reply p { font-size:11px; line-height:1.5; } }
+
+/* Phone review: primary call/history actions need complete touch targets. */
+@media(max-width:700px) {
+  .apc-dock .apc-dock-heading button { min-width:44px; min-height:44px; }
+}
+
+/* Character replies share the existing dock; exact planner results remain available. */
+.apc-ai-disclosure,.apc-ai-notice { margin:0; color:#405b4b; font:11px/1.4 "Courier New",monospace; overflow-wrap:anywhere; }
+.apc-ai-notice { color:#714328; padding-top:4px; }
+.apc-panel-disclosure { padding:10px 22px; background:#edf0d8; }
+.apc-thinking { padding:8px 22px; color:#405b4b; font-size:13px; }
+.apc-planner-details { padding:12px; border:1px solid #a4b08f; background:#edf0d8; }
+.apc-planner-details summary { min-height:36px; cursor:pointer; font-weight:700; }
+.apc-shell.apc-dock { height:auto; min-height:220px; }
+.apc-dock-main { grid-template-rows:auto auto auto auto 42px; align-content:start; gap:8px; }
+.apc-dock .apc-dock-reply { overflow:visible; align-items:start; }
+.apc-dock .apc-dock-reply p { overflow:visible; font-size:14px; line-height:1.6; }
+.apc-dock-ai-note { min-width:0; }
+.apc-dock .apc-ai-notice { margin-top:6px; padding:6px 8px; border-left:3px solid #986542; background:#f5e6cc; color:#633e28; }
+.apc-dock .apc-ai-disclosure,.apc-dock .apc-ai-notice { font-size:11px; line-height:1.45; }
+.apc-dock .apc-dock-reply:not(:has(.apc-dock-next)) { grid-template-columns:minmax(0,1fr); }
+@media(max-width:650px), (max-height:550px) and (min-width:600px) {
+ .apc-shell.apc-dock { grid-template-rows:44px auto auto auto 44px; gap:8px; padding:11px; }
+ .apc-dock-portrait { grid-row:2; margin-top:0; }
+ .apc-dock-portrait>svg { height:42px; width:42px; }
+ .apc-dock-heading { grid-column:1 / -1; grid-row:1; display:grid; grid-template-columns:minmax(0,1fr) repeat(3,auto); grid-template-rows:auto auto; gap:0 5px; }
+ .apc-dock .apc-dock-heading h2 { grid-column:1; grid-row:1; align-self:end; }
+ .apc-dock .apc-dock-heading>span { grid-column:1; grid-row:2; align-self:start; font-size:8px; line-height:1.25; }
+ .apc-dock .apc-dock-heading button { grid-row:1 / 3; min-height:44px; min-width:44px; }
+ .apc-dock-reply { grid-row:2; }
+ .apc-dock .apc-dock-reply { grid-template-columns:minmax(0,1fr); grid-template-rows:auto auto; gap:4px; }
+ .apc-dock .apc-dock-reply p { font-size:13px; line-height:1.6; }
+ .apc-dock .apc-dock-next { height:auto; min-height:36px; min-width:64px; font-size:11px; border:1px solid #a4b08f; background:#f0efd4; }
+ .apc-dock-ai-note { grid-column:1 / -1; grid-row:3; }
+ .apc-dock-commands,.apc-dock-commands:has(.apc-dock-review) { grid-row:4; display:flex; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:thin; }
+ .apc-dock .apc-dock-commands button { flex:0 0 auto; min-width:82px; white-space:nowrap; }
+ .apc-dock .apc-dock-commands .apc-dock-review { order:-1; }
+ .apc-dock-composer { grid-row:5; }
+}
+
+/* Optional tools stay behind a single native disclosure. */
+.apc-chat-options { position:relative; flex-shrink:0; }
+.apc-chat-options summary,.apc-panel-options>summary { min-height:44px; display:flex; align-items:center; cursor:pointer; font:700 11px/1.4 "Courier New",monospace; color:#405b4b; }
+.apc-chat-options summary::after { content:"+"; margin-left:8px; }
+.apc-chat-options[open] summary::after { content:"−"; }
+.apc-chat-options>div { position:absolute; top:100%; right:0; z-index:4; display:flex; flex-direction:column; gap:4px; min-width:130px; padding:8px; background:#fff9df; border:1px solid #809673; box-shadow:3px 3px 0 #203e3922; }
+.apc-dock .apc-chat-options button { min-height:44px; text-align:left; }
+.apc-chat-options summary:focus-visible,.apc-panel-options>summary:focus-visible { outline:3px solid #b1823c; outline-offset:2px; }
+.apc-panel-options { padding:12px; }
+.apc-dock-main { grid-template-rows:none; grid-auto-rows:auto; }
+.apc-dock .apc-dock-commands { justify-content:flex-start; }
+.apc-dock .apc-dock-commands .apc-dock-review { margin-left:0; }
+@media(max-width:650px), (max-height:550px) and (min-width:600px) {
+ .apc-shell.apc-dock { grid-template-rows:auto auto auto auto; }
+ .apc-dock-heading { grid-template-columns:minmax(0,1fr) auto; }
+ .apc-chat-options { grid-column:2; grid-row:1 / 3; }
+ .apc-dock-composer { grid-row:4; }
+ .apc-dock:has(.apc-dock-review) .apc-dock-composer { grid-row:5; }
+}

@@ -58,7 +58,7 @@ Scroll through 08:00 day 1 to 08:00 day 2; manual clock overrides must remain ex
 
 Keep `/demo` setup separate from existing household memory. Weather in the demo is synthetic only; do not activate the dormant weather adapter without a new user instruction. Region multipliers are authored USD comparison scenarios, not tariffs/exchange rates; background thermal estimates never enter appliance savings. Reuse the existing renderer, scheduler and validated demo helpers.
 
-Pip is a scripted 3D guide. Photo recognition is optional local CLIP in a worker, loaded only after an explicit button action. Keep photos off the network and out of persistence. Always retain manual confirmation, abstention, cancellation/stale-result protection and the model-download disclosure. Never infer appliance power, connectivity or verified identity from a photo. Messaging-platform integration is deferred. See ONBOARDING.md and RECOGNITION.md for architecture, actual evidence and limitations.
+Pip is a scripted 3D guide. Photo recognition uses optional local SigLIP for the expanded catalog and legacy CLIP for three-type callers, in a worker, loaded only after an explicit button action. Keep photos off the network and out of persistence. Always retain manual confirmation, abstention, cancellation/stale-result protection and the model-download disclosure. Never infer appliance power, connectivity or verified identity from a photo. Messaging-platform integration is deferred. See ONBOARDING.md and RECOGNITION.md for architecture, actual evidence and limitations.
 
 ## Autonomous city/guide iteration
 
@@ -77,3 +77,19 @@ The latest user instruction supersedes the inline/ordinary-flow guide: use float
 Use demo-commands.ts for both text and reviewed voice requests. Keep proposal, approved schedule, preview clock and execution clock distinct. Only explicit current-proposal approval can start a run; never infer consent from transcription. Restore unfinished runs paused; validate persisted inputs and recompute figures. Do not save audio/chat transcripts or claim synthetic completion is device-confirmed.
 
 Speech is optional browser functionality with explicit Listen and opt-in readout. Guard stale events, call-target changes, hidden pages and unmount. Browser providers may process audio/text remotely; do not promise offline processing. Preserve typed fallback and actual-hook/component regression coverage. See VOICE.md.
+
+## Landing, scanning and messaging boundaries
+
+Latest scope replaces the old homepage layout: keep `/` visual and simple with native pinned story stages plus top/bottom demo links; data and controls belong in `/demo/home`, `/household` and `/energy-parliament`. Preserve interactive defaults when adding presentation modes to shared renderers.
+
+Recruit scanned appliances only after explicit category confirmation; photo matches do not determine specifications or connectivity. Transfer links are untrusted suggestions, never automatic mutations. Keep photos local.
+
+Optional iMessage integration uses a configured Mac bridge, authenticated short-lived browser pairing and verified sender events. Keep the browser planner authoritative and execution approval explicit. Never access personal message databases, enable system privileges, or claim an unconfigured provider is live. Test provider behavior using fixtures and document remaining setup.
+
+## Current scope override: forecast and expanded party
+
+The user's later request explicitly enables actual forecasts, superseding the older synthetic-only instruction above. Use the existing server Open-Meteo adapter and validated two-day snapshots; retain labeled synthetic fallback and explicit what-if mode. Rates/carbon remain synthetic. Never replace an approved run's inputs silently.
+
+Ten catalog categories share confirmed specification passports. Optional local category recognition and nameplate OCR are suggestions; require edited/reviewed inputs before recruitment. Protect AC, refrigeration and water heating; a fixed fan routine earns no shifting savings. Expanded flexible jobs reuse the deterministic engine. Daytime party commands default to Day 1; preserve the original overnight parser convention for legacy callers. Additional-party revisions/execution are session-only; passports persist.
+
+Other user sessions may edit this same workspace. Inspect current files before patches, preserve their UI changes, and do not stage or commit unrelated work. Coordinate by file ownership and rerun integrated checks after concurrent changes.

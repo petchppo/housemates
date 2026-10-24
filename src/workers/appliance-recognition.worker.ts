@@ -1,5 +1,7 @@
 import { env, pipeline, RawImage } from "@huggingface/transformers";
 import { RECOGNITION_CANDIDATES, RECOGNITION_MODEL, RECOGNITION_REVISION } from "../domain/appliance-recognition";
+import { APPLIMON_RECOGNITION_CANDIDATES, APPLIMON_PHOTO_CANDIDATES, APPLIMON_MODEL, APPLIMON_MODEL_REVISION, APPLIMON_HYPOTHESIS_TEMPLATE } from "../domain/applimon-recognition";
+import { analyzeApplianceImage } from "../domain/appliance-image-evidence";
 
 // Browser-only worker. No inference endpoint and no photo upload.
 env.allowLocalModels = false;
@@ -8,7 +10,7 @@ env.backends.onnx.wasm!.numThreads = 1;
 env.backends.onnx.wasm!.proxy = false;
 
 const scope = self as unknown as {
-  onmessage: ((event: MessageEvent<{ requestId: number; photo: Blob }>) => void) | null;
+  onmessage: ((event: MessageEvent<{ requestId: number; photo: Blob; catalogMode?: boolean }>) => void) | null;
   postMessage: (message: unknown) => void;
 };
 
@@ -17,8 +19,8 @@ scope.onmessage = async ({ data }) => {
   const send = (message: Record<string, unknown>) => scope.postMessage({ requestId, ...message });
   let classifier: Awaited<ReturnType<typeof makeClassifier>> | null = null;
   function makeClassifier() {
-    return pipeline("zero-shot-image-classification", RECOGNITION_MODEL, {
-      revision: RECOGNITION_REVISION,
+    return pipeline("zero-shot-image-classification", data.catalogMode === true ? APPLIMON_MODEL : RECOGNITION_MODEL, {
+      revision: data.catalogMode === true ? APPLIMON_MODEL_REVISION : RECOGNITION_REVISION,
       dtype: "q8",
       device: "wasm",
       progress_callback: progress => {
@@ -40,14 +42,26 @@ scope.onmessage = async ({ data }) => {
       const canvas = new OffscreenCanvas(Math.max(1, Math.round(bitmap.width * ratio)), Math.max(1, Math.round(bitmap.height * ratio)));
       const context = canvas.getContext("2d");
       if (!context) throw new Error("Photo processing is unavailable. Please choose manually.");
+      // Match evaluated product-image preprocessing, including transparent PNGs.
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
       context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
       image = RawImage.fromCanvas(canvas);
     } finally { bitmap.close(); }
+    const imageEvidence = data.catalogMode === true ? analyzeApplianceImage(image) : undefined;
     send({ status: "loading", message: "Loading the on-device model. First use downloads model files…" });
     classifier = await makeClassifier();
     send({ status: "running", message: "Comparing appliance candidates on this device…" });
-    const matches = await classifier(image, RECOGNITION_CANDIDATES.map(candidate => candidate.label));
-    send({ status: "complete", matches });
+    const candidates=data.catalogMode===true?APPLIMON_RECOGNITION_CANDIDATES:RECOGNITION_CANDIDATES;
+    const categoryLabels = candidates.map(candidate => candidate.label);
+    const matches = data.catalogMode === true
+      ? await classifier(image, categoryLabels, { hypothesis_template: APPLIMON_HYPOTHESIS_TEMPLATE })
+      : await classifier(image, categoryLabels);
+    if (data.catalogMode === true) {
+      send({ status: "running", message: "Reviewing image detail and style…" });
+      const photoMatches = await classifier(image, APPLIMON_PHOTO_CANDIDATES.map(candidate => candidate.label), { hypothesis_template: APPLIMON_HYPOTHESIS_TEMPLATE });
+      send({ status: "complete", matches, photoMatches, imageEvidence });
+    } else send({ status: "complete", matches });
   } catch (error) {
     send({ status: "error", message: error instanceof Error ? error.message.slice(0, 240) : "On-device recognition failed. Please retry or choose manually." });
   } finally {

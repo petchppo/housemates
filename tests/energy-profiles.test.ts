@@ -61,7 +61,8 @@ test("dishwasher profiles reject wrong lengths, nonfinite values, negative consu
   for (const profile of [[1.2], [0.6, 0.6, 0], [1.3, -0.1], [NaN, 1.2], [Infinity, 0], [0.1, 0.1], new Array<number>(2)]) {
     assert.equal(getSchedulingOptions(dishwasher({ cycleProfileKwh: profile }), hourlyEnergy).status, "invalid-input");
   }
-  for (const duration of [0, -1, 2.5, 49, Infinity, NaN]) {
+  assert.equal(getSchedulingOptions(dishwasher({ cycleHours: 2.5, cycleProfileKwh: [.6, .6] }), hourlyEnergy).status, "invalid-input");
+  for (const duration of [0, -1, 49, Infinity, NaN]) {
     assert.equal(getSchedulingOptions(dishwasher({ cycleHours: duration }), hourlyEnergy).status, "invalid-input");
   }
 });

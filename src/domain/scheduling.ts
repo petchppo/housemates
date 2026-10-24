@@ -101,8 +101,8 @@ function requestIssues(request: SchedulingRequest): string[] {
     issues.push("The modeled session duration is too small to represent reliably on this timeline.");
   if (request.appliance.kind === "dishwasher") {
     const c = request.appliance.constraints;
-    if (!Number.isInteger(c.cycleHours) || c.cycleHours < 1 || c.cycleHours > PLANNING_HOURS)
-      issues.push("Dishwasher cycle duration must be a whole number of hours between 1 and 48.");
+    if (!Number.isFinite(c.cycleHours) || c.cycleHours <= 0 || c.cycleHours > PLANNING_HOURS)
+      issues.push("Dishwasher cycle duration must be greater than zero and at most 48 hours.");
     if (c.cycleProfileKwh !== undefined) {
       const profile = c.cycleProfileKwh;
       if (!Array.isArray(profile) || profile.length !== c.cycleHours ||
@@ -149,11 +149,12 @@ function buildSchedule(request: SchedulingRequest, startHour: number, profile: r
   const dishwasherProfile = request.appliance.kind === "dishwasher" ? request.appliance.constraints.cycleProfileKwh : undefined;
   for (let index = 0; index < Math.ceil(p.duration); index++) {
     const hour = startHour + index;
+    const cycleActiveHours = Math.min(1, p.duration - index);
     const energyKwh = request.appliance.kind === "ev"
       ? Math.max(0, Math.min(p.powerKw, p.energyKwh - index * p.powerKw))
-      : dishwasherProfile?.[index] ?? p.energyKwh / p.duration;
-    const powerKw = request.appliance.kind === "ev" ? p.powerKw : energyKwh;
-    const activeHours = request.appliance.kind === "ev" ? energyKwh / p.powerKw : 1;
+      : dishwasherProfile?.[index] ?? p.energyKwh / p.duration * cycleActiveHours;
+    const powerKw = request.appliance.kind === "ev" ? p.powerKw : energyKwh / cycleActiveHours;
+    const activeHours = request.appliance.kind === "ev" ? energyKwh / p.powerKw : cycleActiveHours;
     const totals = estimateUsage(energyKwh, profile[hour % 24]);
     intervals.push({ hour, energyKwh, activeHours, powerKw, ...totals });
   }

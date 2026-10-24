@@ -1,0 +1,21 @@
+.applimon-reveal { --reveal-ink:#264d45; position:relative; overflow:hidden; color:var(--reveal-ink); border:2px solid #688778; background:#f7f8e4; text-align:center; }
+.applimon-reveal-stage { position:relative; height:230px; isolation:isolate; overflow:hidden; display:grid; place-items:center; background:radial-gradient(ellipse at center,#eff5ca 0%,#d8e9d3 65%,#c7ddd3 100%); }
+.applimon-reveal-grid { position:absolute; inset:0; opacity:.24; background-image:linear-gradient(#7d9e8b 1px,transparent 1px),linear-gradient(90deg,#7d9e8b 1px,transparent 1px); background-size:24px 24px; transform:perspective(250px) rotateX(30deg) scale(1.3); }
+.applimon-reveal-photo { position:absolute; inset:18px; width:calc(100% - 36px); height:calc(100% - 36px); object-fit:contain; animation:applimon-photo-resolve 1.35s ease-out both; }
+.applimon-reveal-orbit { position:absolute; bottom:22px; width:180px; height:46px; border:2px solid #83a180; background:#fffadc8c; border-radius:50%; box-shadow:0 8px 0 #79978224; }
+.applimon-reveal-sprite { z-index:1; transform-origin:50% 85%; animation:applimon-sprite-arrive 1.35s cubic-bezier(.16,1,.3,1) both; filter:drop-shadow(0 10px 0 #456d3b25); }
+.applimon-reveal-sprite svg { display:block; width:148px; height:148px; image-rendering:pixelated; }
+.applimon-reveal-spark { position:absolute; color:#6f8f4c; font:32px/1 monospace; animation:applimon-spark-arrive 1.5s ease-out both; }
+.applimon-reveal .spark-one { left:20%; top:28%; }.applimon-reveal .spark-two { right:19%; top:42%; font-size:40px; }.applimon-reveal .spark-three { right:29%; top:19%; font-size:23px; }
+.applimon-reveal-caption { padding:14px 16px 12px; border-top:2px solid #90ab8d; }
+.applimon-reveal-caption>p:first-child { margin:0 0 7px; font:700 10px/1.5 "Courier New",monospace; letter-spacing:1.4px; }
+.applimon-reveal-caption h3 { margin:0; font:700 26px/1.2 "Courier New",monospace; }.applimon-reveal-caption h3 span { display:block; margin-top:5px; font:12px/1.4 sans-serif; color:#5c7062; }
+.applimon-reveal .applimon-reveal-note { margin:10px auto 0; max-width:36ch; font:12px/1.6 sans-serif; color:#52675b; }
+.applimon-reveal>button { min-height:44px; margin:0 16px 16px; padding:11px 20px; border:2px solid #264d45; background:#527c63; color:#fffbe6; font:700 13px/1.3 "Courier New",monospace; cursor:pointer; }
+.applimon-reveal>button:focus-visible { outline:3px solid #ad793a; outline-offset:3px; }
+.applimon-reveal.is-confirmed { border-color:#788b40; }.applimon-reveal.is-confirmed .applimon-reveal-stage { background:radial-gradient(ellipse at center,#fff6c7,#d9e8bc); }
+@keyframes applimon-photo-resolve { 0%,25% { opacity:1; transform:scale(1); clip-path:inset(0); } 70% { opacity:.25; transform:scale(.8); clip-path:inset(20% 10%); } 100% { opacity:0; transform:scale(.65); clip-path:inset(50%); } }
+@keyframes applimon-sprite-arrive { 0%,28% { opacity:0; transform:translateY(30px) scale(.45); } 65% { opacity:1; transform:translateY(-8px) scale(1.06); } 100% { opacity:1; transform:translateY(0) scale(1); } }
+@keyframes applimon-spark-arrive { 0%,45% { opacity:0; transform:translateY(10px) scale(.5); } 100% { opacity:.8; transform:translateY(0) scale(1); } }
+@media(max-width:400px) { .applimon-reveal-stage { height:200px; }.applimon-reveal-sprite svg { width:132px; height:132px; } }
+@media(prefers-reduced-motion:reduce) { .applimon-reveal * { animation:none!important; }.applimon-reveal-photo { display:none; } }

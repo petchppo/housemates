@@ -39,3 +39,5 @@
 .hm3d-build-controls button { min-height: 44px; padding: 8px 11px; border: 1px solid #75657955; border-radius: 6px; background: #fffaf0; color: #4f455d; font: 700 11px/1.2 "Courier New", monospace; cursor: pointer; }
 .hm3d-build-controls button:hover { background: #e6e9d6; }
 @media(max-width: 420px) { .hm3d-constructing .hm3d-toolbar { justify-content: center; gap: 7px; }.hm3d-build-controls { width: 100%; justify-content: center; }.hm3d-build-controls button { flex: 1; } }
+
+.hm3d-presentation .hm3d-stage canvas { cursor:default; touch-action:pan-y !important; pointer-events:none; }
