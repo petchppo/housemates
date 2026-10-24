@@ -10,7 +10,7 @@ Entry: **Join the demo** on `/`, or `/demo`. The existing `/household` and `/ene
 4. **Team.** Toggle Evie, Bubbles and Chill, or open local photo setup. Every addition lands in the world. A photo can receive an optional on-device model suggestion, followed by explicit manual type selection and confirmation. Photos never determine power, deadlines, brand/model, or device connectivity.
 5. **Move in.** Save a validated setup locally, display a selected-team cost/carbon/balanced plan using the existing deterministic engine, and scrub the simulation clock. Resume restores region, residence, team and weather choices. Empty restored teams return to recruitment. Messaging integration remains a future chapter.
 
-Pip is an original procedural 3D guide with scripted contextual guidance. Its text is not an LLM response. Scene construction supports Finish build, Replay build, front-facing rotation, zoom and reduced motion. On phones Pip remains sticky while scrolling through the setup controls.
+Pip is an original procedural 3D guide with scripted contextual guidance. Its text is not an LLM response. Scene construction supports Finish build, Replay build, front-facing rotation, zoom and reduced motion. On phones the expanded guide stays in ordinary flow; minimize it to keep a compact header available while scrolling through the setup controls.
 
 ```mermaid
 flowchart LR
@@ -50,3 +50,11 @@ References: [Transformers.js pipelines](https://huggingface.co/docs/transformers
 - A different specialist reviews each implementation. Visual reviewers must view actual desktop/mobile screenshots and construction frames.
 
 Every lane follows implement → scoped checks → inspect failure → repair → recheck → independent review. The lead runs the real browser journey, captures repaired layouts, checks legacy routes, then runs lint, TypeScript, tests and a production build. Only a passing milestone is committed locally. No remote deployment, external messaging or paid API calls are part of this milestone.
+
+## City miniatures and Pip’s field guide
+
+Each preset adds an original landmark during the landscape build: San Francisco’s Golden Gate Bridge, London’s Elizabeth Tower, Bangkok’s Grand Palace-inspired pavilion, Tokyo Tower, Oslo Opera House and Sydney Opera House. Scale and placement are imaginary. Cultural descriptions and official reference links live in `src/data/city-landmarks.ts`. The legacy household scene does not gain a landmark automatically.
+
+Pip carries a small map and offers paged, contextual written dialogue through `tutorial-npc.tsx` and `tutorial-dialogue.ts`. Next/Back changes only guide pages; optional topics explain the city, simulation, weather and recruitment. Show-me actions focus and scroll to the current chapter’s actual controls. Minimize/reopen preserves a quiet optional guide. Expanded dialogue flows normally on phones so it cannot cover setup controls; minimized guidance can stay pinned. No LLM, speech or messaging connection is implied.
+
+Deployment handoff: this repository has no configured remote/deployment destination. No deployment was attempted for the city/NPC revision. The demo is available locally; if a future deployment fails, record its failure and retain a clearly labeled local placeholder for the morning.

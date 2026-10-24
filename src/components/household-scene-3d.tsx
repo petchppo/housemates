@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import type { ApplianceId } from "@/domain/appliances";
+import { CITY_LANDMARK_IDS, createCityLandmark } from "./city-landmark-geometry";
 import "./household-scene-3d.css";
 
 type RegionTheme = "coastal" | "garden" | "tropical" | "urban" | "nordic" | "dry";
@@ -123,6 +124,20 @@ export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollPr
     const grouped = (parent: THREE.Object3D = world) => { const value = new THREE.Group(); parent.add(value); return value; };
     const groundGroup = grouped(), pathGroup = grouped(), decorGroup = grouped();
     const landscapes = Object.fromEntries((["garden", "coastal", "tropical", "urban", "nordic", "dry"] as RegionTheme[]).map((key) => [key, grouped()])) as Record<RegionTheme, THREE.Group>;
+    const landmarks = Object.fromEntries((Object.keys(landscapes) as RegionTheme[]).map((theme) => {
+      const landmark = createCityLandmark(theme);
+      landmark.position.set(-3.9, 0.07, -0.1);
+      landmark.scale.setScalar(["coastal", "nordic", "dry"].includes(theme) ? 0.9 : 0.82); world.add(landmark);
+      landmark.traverse((object) => {
+        if (object instanceof THREE.Mesh) {
+          geometries.add(object.geometry);
+          for (const paint of Array.isArray(object.material) ? object.material : [object.material]) materials.add(paint);
+        }
+      });
+      return [theme, landmark];
+    })) as Record<RegionTheme, THREE.Group>;
+    const landmarkTrees: { object: THREE.Group; base: THREE.Vector3 }[] = [];
+    const landmarkTreePosition = new THREE.Vector3(-4.65, 0, -3.45);
     const lawnMaterial = mat(palette.lawn);
     // A floating, fully modeled garden island, not a billboard.
     box(groundGroup, mat(0x947d74), 0, -0.4, 0, 10.6, 0.65, 8.6);
@@ -161,8 +176,10 @@ export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollPr
       box(panels, darkGlass, (x - 0.5) * 0.67, 0.045, (z - 1) * 0.9, 0.55, 0.03, 0.78);
     }
     for (const [x, z, size] of [[-4.3, -2.7, 1.1], [4.3, -2.6, 1.2], [4.65, -0.65, 0.65], [-4.4, 3.1, 0.55]]) {
-      cylinder(landscapes.garden, bark, x, 0.8 * size, z, 0.16 * size, 1.6 * size);
-      ball(landscapes.garden, green, x, 2 * size, z, 0.9 * size); ball(landscapes.garden, mint, x - 0.3 * size, 2.7 * size, z, 0.66 * size);
+      const gardenTree = grouped(landscapes.garden); gardenTree.position.set(x, 0, z);
+      cylinder(gardenTree, bark, 0, 0.8 * size, 0, 0.16 * size, 1.6 * size);
+      ball(gardenTree, green, 0, 2 * size, 0, 0.9 * size); ball(gardenTree, mint, -0.3 * size, 2.7 * size, 0, 0.66 * size);
+      if (x < 0 && z < 0) landmarkTrees.push({ object: gardenTree, base: gardenTree.position.clone() });
     }
     for (let i = 0; i < 13; i++) box(decorGroup, cream, -4.8 + i * 0.8, 0.48, -4, 0.14, 0.85, 0.14);
     for (const y of [0.3, 0.65]) box(decorGroup, cream, 0, y, -4, 9.8, 0.12, 0.1);
@@ -202,6 +219,7 @@ export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollPr
         cylinder(cactus, evergreen, side * 0.47 * size, (1 + (side + 1) * 0.15) * size, 0, 0.13 * size, 0.65 * size, 6);
       }
       const rock = ball(landscapes.dry, peach, x + 0.35, 0.2, z + 0.4, 0.35 * size); rock.scale.y = 0.6;
+      if (x < 0 && z < 0) for (const object of [palm, pine, cityTree, coastalTree, cactus]) landmarkTrees.push({ object, base: object.position.clone() });
     }
     box(landscapes.coastal, sand, -4.8, 0.09, 0, 0.6, 0.05, 7.4);
     for (let i = 0; i < 5; i++) ball(landscapes.coastal, cream, -4.9, 0.16, -2 + i, 0.12);
@@ -319,7 +337,7 @@ export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollPr
     fan.castShadow = false;
     type DropState = { object: THREE.Group; base: THREE.Vector3; scale: THREE.Vector3; requested: boolean; started: number; done: boolean };
     const dropStates = new Map<THREE.Group, DropState>();
-    const stagedGroups = [groundGroup, pathGroup, decorGroup, ...Object.values(landscapes), ...Object.values(residences), ...Object.values(roofs), ...Object.values(weatherGroups), ...Object.values(characters).map((character) => character.entrance)];
+    const stagedGroups = [groundGroup, pathGroup, decorGroup, ...Object.values(landscapes), ...Object.values(landmarks), ...Object.values(residences), ...Object.values(roofs), ...Object.values(weatherGroups), ...Object.values(characters).map((character) => character.entrance)];
     for (const object of stagedGroups) dropStates.set(object, { object, base: object.position.clone(), scale: object.scale.clone(), requested: false, started: 0, done: false });
     let localReplay = 0, skipBuild = false, previousBuildKey = "", previousSignature = "", completedSignature = "";
     buildCommand.current = (action) => { if (action === "skip") skipBuild = true; else localReplay++; };
@@ -354,6 +372,11 @@ export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollPr
       };
       apply(groundGroup, true, 0); apply(pathGroup, true, 1); apply(decorGroup, true, 2);
       for (const [key, object] of Object.entries(landscapes)) apply(object, key === theme, 2);
+      for (const [key, object] of Object.entries(landmarks)) apply(object, Boolean(props.regionTheme) && key === theme, 2.2);
+      for (const tree of landmarkTrees) {
+        tree.object.position.copy(props.regionTheme ? landmarkTreePosition : tree.base);
+        tree.object.scale.setScalar(props.regionTheme ? 0.55 : 1);
+      }
       for (const [key, object] of Object.entries(residences)) apply(object, level >= 1 && key === residence, 3);
       for (const [key, object] of Object.entries(roofs)) apply(object, level >= 1 && key === residence, 4);
       for (const [key, object] of Object.entries(weatherGroups)) apply(object, level >= 2 && Boolean(props.weatherKind) && key === props.weatherKind, 5);
@@ -361,6 +384,7 @@ export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollPr
       lawnMaterial.color.setHex({ garden: palette.lawn, coastal: 0xd9d2a8, tropical: 0x9dbd81, urban: 0xb9c5ae, nordic: 0xc6d3bd, dry: 0xdac092 }[theme]);
       mount.dataset.constructionLevel = String(level);
       mount.dataset.region = theme; mount.dataset.residence = residence;
+      mount.dataset.landmark = props.regionTheme ? CITY_LANDMARK_IDS[theme] : "none";
       mount.dataset.appliances = level >= 3 ? visibleIds.join(",") : "";
       const complete = [...dropStates.values()].every((state) => !state.requested || state.done);
       mount.dataset.buildState = complete ? "complete" : "building";
@@ -509,7 +533,8 @@ export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollPr
       stopped = true; cancelAnimationFrame(frame); observer.disconnect(); visibilityObserver.disconnect(); document.removeEventListener("visibilitychange", resume); motion.removeEventListener("change", motionChange);
       canvas.removeEventListener("keydown", keydown); canvas.removeEventListener("focus", focus); canvas.removeEventListener("blur", blur);
       canvas.removeEventListener("pointerdown", pointerDown); canvas.removeEventListener("pointerup", pointerUp); canvas.removeEventListener("webglcontextlost", contextLost);
-      controls.dispose(); geometries.forEach((item) => item.dispose()); materials.forEach((item) => item.dispose()); textures.forEach((item) => item.dispose()); renderer.dispose(); canvas.remove(); command.current = () => {}; buildCommand.current = () => {};
+      controls.dispose(); geometries.forEach((item) => item.dispose()); materials.forEach((item) => item.dispose()); textures.forEach((item) => item.dispose()); // Release the browser context as well as GPU objects during route changes/HMR.
+      renderer.dispose(); renderer.forceContextLoss(); canvas.remove(); command.current = () => {}; buildCommand.current = () => {};
     };
   }, [generation]);
 

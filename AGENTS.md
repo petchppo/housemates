@@ -21,7 +21,7 @@ Read SPEC.md, PLAN.md, PROGRESS.md, and current Git status before changing code.
 
 - Native subagents are authorized. Define shared interfaces first; assign disjoint files and explicit ownership. No concurrent edits to another owner's files without handoff.
 - Specialists report exact checks and risks. Lead integrates, obtains an independent review, updates PROGRESS.md, and creates local commits only after gates pass.
-- Preserve unrelated/user edits. Do not reset/clean away work. No specialist commits unless delegated; no remote push or public deployment.
+- Preserve unrelated/user edits. Do not reset/clean away work. No specialist commits unless delegated. Deployment decisions are delegated to the orchestrator when a project target is configured; do not invent a destination.
 - Continue to the next unfinished phase without another user prompt. Record blockers honestly; never mark acceptance criteria complete without evidence.
 
 ## Safety
@@ -59,3 +59,9 @@ Scroll through 08:00 day 1 to 08:00 day 2; manual clock overrides must remain ex
 Keep `/demo` setup separate from existing household memory. Weather in the demo is synthetic only; do not activate the dormant weather adapter without a new user instruction. Region multipliers are authored USD comparison scenarios, not tariffs/exchange rates; background thermal estimates never enter appliance savings. Reuse the existing renderer, scheduler and validated demo helpers.
 
 Pip is a scripted 3D guide. Photo recognition is optional local CLIP in a worker, loaded only after an explicit button action. Keep photos off the network and out of persistence. Always retain manual confirmation, abstention, cancellation/stale-result protection and the model-download disclosure. Never infer appliance power, connectivity or verified identity from a photo. Messaging-platform integration is deferred. See ONBOARDING.md and RECOGNITION.md for architecture, actual evidence and limitations.
+
+## Autonomous city/guide iteration
+
+Orchestrators decide routine product, design and implementation details within the authorized project scope; avoid repeated confirmation. Tool permission controls still apply. Preserve successful local functionality. If a deployment attempt fails, leave an honest placeholder and record the exact blocker for morning; never claim a public deployment without verifying it.
+
+City landmarks are original symbolic miniatures, not geographic replicas. Reuse the existing Three.js construction/lifecycle path and preserve the legacy household scene when no city is selected. Pip’s tutorial is written guidance with explicit navigation; it must not mutate setup or planning state. On narrow screens expanded dialogue stays in ordinary flow; a minimized guide may remain sticky. Review actual six-city scenes and NPC controls before acceptance.

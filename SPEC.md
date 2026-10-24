@@ -52,7 +52,7 @@ Required views may be routes or panels: preserved homepage; group chat; interact
 
 ## Authorization
 
-Autonomous project edits, ordinary necessary dependencies, subagents, local tests/preview, and local commits are authorized. No remote push, public deployment, purchases, paid calls, external accounts, secrets exposure, unrelated changes, destructive Git, or machine-wide security changes. Respect tool approval controls. Keep progressing through all phases unless an essential blocker requires user intervention.
+Autonomous project edits, ordinary necessary dependencies, subagents, local tests/preview, and local commits are authorized. The latest instruction delegates deployment decisions to the orchestrator when a project destination is configured; record failures and leave an honest placeholder. Do not expose secrets, make unrelated changes, use destructive Git, or alter machine-wide security settings. Respect tool approval controls. Keep progressing through all phases unless an essential blocker requires user intervention.
 
 ## Current visual/interaction revision (supersedes chat-board presentation)
 
@@ -73,3 +73,11 @@ From checkpoint a12674f, add a Join the demo entry and /demo route. A persistent
 Use synthetic weather only (explicit user clarification). Show a labeled fictional day, temperature/humidity and hourly graphic; allow bounded what-if temperature and sky changes. No weather-network or geolocation calls from the demo. Region-dependent synthetic electricity/carbon scenarios remain clearly labeled and denominated in USD for comparison. Residence and outdoor temperature affect a separately disclosed illustrative background heating/cooling calculation, never actual indoor temperature, thermal control or optimized Chill savings. Use the existing scheduler for selected flexible appliances; do not invent appliances or power measurements from a picture.
 
 Appliance recruitment supports manual selection and local photo/camera capture, with optional real on-device CLIP suggestions. No recognition API key is required. Disclose the first-use model/runtime download, allow cancellation and manual fallback, abstain on ambiguous results, and require explicit confirmation. No photos uploaded or persisted. Messaging-platform/iMessage integration is a future step, not implemented in this milestone. Save validated demo setup separately from existing household preferences; do not overwrite the existing planner by entering onboarding.
+
+## City landmarks and interactive guide revision
+
+Add original procedural miniatures to all six demo city builds: Golden Gate Bridge, Elizabeth Tower, a Grand Palace-inspired pavilion, Tokyo Tower, Oslo Opera House and Sydney Opera House. They join staged construction and replay, preserve the existing household scene, and are symbolic rather than geographic reconstructions. Landmark metadata includes official cultural-context references.
+
+Pip becomes a lilac-and-lime builder’s field guide with a small map/satchel and cream/violet game dialogue. Each onboarding chapter offers paged written guidance, contextual help, a control-navigation action, and minimize/reopen. Dialogue never advances setup, recruits appliances, changes constraints or pretends to be an AI response. Preserve keyboard controls, reduced motion and narrow-screen access.
+
+Latest authorization: orchestrating agents make routine project/design decisions autonomously. Respect actual tool permissions; do not request repeated confirmation for already-authorized work. If an attempted deployment fails, keep a clearly labeled placeholder and record the blocker for morning. No deployment destination is currently configured.

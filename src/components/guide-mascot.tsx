@@ -25,6 +25,11 @@ function GuideFallback() {
     <path d="M113 140q10 10 19 0" fill="none" stroke="#382b4a" strokeWidth="4" strokeLinecap="round"/>
     <ellipse cx="87" cy="134" rx="7" ry="4" fill="#e9b7c8"/><ellipse cx="157" cy="134" rx="7" ry="4" fill="#e9b7c8"/>
     <path d="M93 181v8m56-8v8" stroke="#a3bd71" strokeWidth="20" strokeLinecap="round"/>
+    <path d="m103 149 43 30" stroke="#80678f" strokeWidth="7"/>
+    <rect x="134" y="166" width="26" height="20" rx="4" fill="#f4e7c5" stroke="#80678f" strokeWidth="2"/>
+    <path d="M137 173h20m-11-3v8" stroke="#a3bd71" strokeWidth="3"/>
+    <path d="m49 165 11-5 11 5 10-5v27l-10 5-11-5-11 5z" fill="#fff3d8" stroke="#80678f" strokeWidth="2"/>
+    <path d="m54 179 8-7 10 10 4-6" fill="none" stroke="#9dbb74" strokeWidth="2"/>
     <path d="m189 71 4-10 4 10 10 4-10 4-4 10-4-10-10-4z" fill="#d1e699"/>
   </svg>;
 }
@@ -112,11 +117,19 @@ export function GuideMascot({ talking = false, mood = "welcome", className = "" 
     mouth.rotation.z = Math.PI;
     const badge = mesh(new THREE.BoxGeometry(.19, .19, .035), cream, creature, 0, .39, .442);
     badge.rotation.z = Math.PI / 4;
+    const strap = round(creature, purple, .12, .45, .45, .07, .61, .035, .012);
+    strap.rotation.z = .9;
+    round(creature, cream, .36, .27, .48, .35, .26, .15, .04);
+    round(creature, lime, .36, .28, .565, .065, .1, .025, .01);
     const armLeft = new THREE.Group();
     armLeft.position.set(-.59, .76, 0);
     creature.add(armLeft);
     round(armLeft, purple, -.11, -.13, 0, .17, .37, .17, .075);
     ball(armLeft, lilac, -.16, -.3, .03, .17);
+    const map = round(armLeft, cream, -.15, -.25, .19, .28, .34, .025, .012);
+    map.rotation.z = -.14;
+    const trail = round(armLeft, lime, -.15, -.25, .207, .16, .035, .008, .004);
+    trail.rotation.z = .55;
     const armRight = new THREE.Group();
     armRight.position.set(.59, .9, 0);
     creature.add(armRight);
@@ -187,6 +200,7 @@ export function GuideMascot({ talking = false, mood = "welcome", className = "" 
       geometries.forEach(geometry => geometry.dispose());
       materials.forEach(surface => surface.dispose());
       renderer.dispose();
+      renderer.forceContextLoss();
       canvas.remove();
     };
   }, []);

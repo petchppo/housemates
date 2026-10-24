@@ -92,3 +92,9 @@ Lead: /demo route, guided state machine, weather/stat UI, setup persistence, hom
 Implement → scoped checks → integrated browser journey → actual desktop/mobile screenshots reviewed by independent specialists → repair/review until no material findings → full lint/typecheck/tests/build → update evidence and local checkpoint. Verify step back/change/replay, weather failure/stale response, photo cancellation, saved setup restore, selected-team calculations and existing routes. No external messaging integration in this milestone.
 
 Guided demo milestone complete. User’s synthetic-only weather correction is implemented; optional real browser-local image suggestions replace the initial manual-only placeholder. Independent visual/source reviews and final 117-test, lint, TypeScript, production-build gates passed. See PROGRESS.md for actual repairs/evidence and ONBOARDING.md/RECOGNITION.md for the handoff.
+
+## City landmarks and NPC guide — complete
+
+Lead owns onboarding integration, focus/scroll navigation, responsive layout, docs, real browser QA and final gates. Scene specialist owns original landmark geometry and existing renderer integration. Guide specialist owns tutorial data/component and Pip aesthetics. Metadata/review specialist owns cultural landmark metadata and independent source/visual review. Shared interfaces are fixed before integration; no competing writes or specialist commits.
+
+Review loop: scoped checks → six rendered city builds → NPC paging/help/minimize/navigation → desktop/tablet/phone/narrow/landscape screenshots → independent review → targeted repairs → re-review → full lint/TypeScript/tests/build → documented local checkpoint. Any deployment blocker is documented as a placeholder; never claim an unverified deployment.
