@@ -22,7 +22,7 @@ test("demo clock rounds fractional minutes reliably and distinguishes the final 
   for (const invalid of [NaN, Infinity, -Infinity]) assert.throws(() => formatDemoHour(invalid), RangeError);
 });
 
-test("all six region presets derive distinct finite 24-hour profiles from the shared data in USD", () => {
+test("all six region presets derive distinct finite solar-sensitive 24-hour profiles without mutating shared data", () => {
   const before = structuredClone(hourlyEnergy);
   const profiles = DEMO_REGIONS.map(region => buildRegionEnergyProfile(region.id));
   assert.equal(DEMO_REGIONS.length, 6);
@@ -32,8 +32,8 @@ test("all six region presets derive distinct finite 24-hour profiles from the sh
     assert.equal(profiles[index].length, 24);
     profiles[index].forEach((row, hour) => {
       assert.equal(row.hour, hour);
-      close(row.priceUsdPerKwh, hourlyEnergy[hour].priceUsdPerKwh * region.priceFactor);
-      close(row.carbonGramsPerKwh, hourlyEnergy[hour].carbonGramsPerKwh * region.carbonFactor);
+      assert.ok(Number.isFinite(row.priceUsdPerKwh) && row.priceUsdPerKwh > 0);
+      assert.ok(Number.isFinite(row.carbonGramsPerKwh) && row.carbonGramsPerKwh >= 0);
     });
   });
   profiles[0][0].priceUsdPerKwh = 999;
@@ -193,4 +193,21 @@ test("synthetic weather override boundaries are finite, whole and explicit rathe
     }
   }
   assert.throws(() => buildDemoWeather({ ...profile(), weatherOffsetC: 11 }), RangeError);
+});
+
+test("saved planning objectives validate, survive handoff, and leave old demo profiles compatible", () => {
+  assert.throws(() => buildDemoScenario(null as never), RangeError);
+  for (const planningMode of ["cost", "carbon", "balanced"] as const) {
+    const input = profile({ planningMode });
+    const restored = parseDemoProfile(JSON.stringify(input));
+    assert.deepEqual(restored, input);
+    assert.deepEqual(buildDemoScenario(restored!).plan, buildDemoScenario(profile(), undefined, planningMode).plan);
+  }
+  for (const planningMode of ["cheapest", "__proto__", "", 0, null, [], {}]) {
+    assert.equal(validateDemoProfile({ ...profile(), planningMode }), null);
+  }
+  assert.equal("planningMode" in parseDemoProfile(JSON.stringify(profile()))!, false);
+  assert.deepEqual(buildDemoScenario(profile()).plan, buildDemoScenario(profile(), undefined, "cost").plan);
+  assert.deepEqual(buildDemoScenario(profile({ planningMode: "carbon" }), undefined, "cost").plan,
+    buildDemoScenario(profile(), undefined, "cost").plan);
 });

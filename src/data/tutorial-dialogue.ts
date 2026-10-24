@@ -13,6 +13,20 @@ const homes: Record<ResidenceType, string> = { apartment: "apartment", townhouse
 const targets: TutorialTarget[] = ["region", "home", "weather", "team", "plan"];
 const chapters = ["Find your place", "Build your nest", "Read the sky", "Meet your party", "Make a plan"];
 
+/** Short coachmark prompts; the full chapter remains available as optional help. */
+export function getTutorialPrompt(context: TutorialContext, completed = false): string {
+  if (completed) return "You’re home! Explore the simulated day with the clock. I’m here if you need a hand.";
+  const prompts = [
+    `Start with a city. ${getDemoRegion(context.regionId).city} sets the scene and synthetic energy profile. Ready to build?`,
+    "Choose your home’s shape. Then let’s give this little world a weather day.",
+    "Try a synthetic weather day. Temperature changes the background estimate; sky changes the scenery.",
+    context.applianceIds.length ? "Your team is taking shape! Keep your favorites, then let’s inspect their calculated plan." : "Invite at least one housemate first. Evie and Bubbles can explore flexible schedules; Chill protects comfort.",
+    "Your home is ready to explore. Check the calculated plan, then step inside.",
+  ];
+  const index = Number.isFinite(context.step) ? Math.max(0, Math.min(4, Math.floor(context.step))) : 0;
+  return prompts[index];
+}
+
 /** Authored guidance follows current choices; it never calculates or mutates them. */
 export function getTutorialChapter(context: TutorialContext): TutorialChapter {
   const index = Number.isFinite(context.step) ? Math.max(0, Math.min(4, Math.floor(context.step))) : 0;

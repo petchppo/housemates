@@ -58,3 +58,17 @@ Each preset adds an original landmark during the landscape build: San Francisco�
 Pip carries a small map and offers paged, contextual written dialogue through `tutorial-npc.tsx` and `tutorial-dialogue.ts`. Next/Back changes only guide pages; optional topics explain the city, simulation, weather and recruitment. Show-me actions focus and scroll to the current chapter’s actual controls. Minimize/reopen preserves a quiet optional guide. Expanded dialogue flows normally on phones so it cannot cover setup controls; minimized guidance can stay pinned. No LLM, speech or messaging connection is implied.
 
 Deployment handoff: this repository has no configured remote/deployment destination. No deployment was attempted for the city/NPC revision. The demo is available locally; if a future deployment fails, record its failure and retain a clearly labeled local placeholder for the morning.
+
+## Completed-home dashboard and floating guide (latest revision)
+
+Move in presents a prominent **Finish build & enter home** action. The final scene button and Pip’s **Enter my home** use the same completion function. Earlier scene buttons say **Skip animation**. Successful persistence opens `/demo/home`; blocked writes keep the completed home in the current session. Direct visits restore validated profile and planningMode, or show setup if no valid recruited team exists. Edit my world returns to the current setup without resetting existing household memory.
+
+The dashboard exposes original/optimized routines, cost/carbon/balanced selection, a48h clock and all3 recruitment/status cards. Chill’s cooling power, accrued energy/cost/carbon and24h bars are computed from the weather/occupancy model; cold neutral days can correctly show standby. No AC task enters the optimizer. AC is a subset of background cooling, not an additional load.
+
+Pip now floats in a body portal, tracking the next action with viewport-clamped positioning. Compact speech and explicit advancement replace the below-map panel; help expands on demand and remains scrollable. Native scroll, keyboard controls, minimize/reopen and reduced motion remain available. Position updates are RAF-coalesced and clean up observers/listeners.
+
+`demo-grid.ts` supplies24 authored indexed demand/solar/net-demand rows per region. `demo.ts` blends the existing synthetic rates with separate net-load-sensitive price and supply/carbon shapes. The California example shows a pronounced midday trough; other regions use different fictional solar strengths. These are not national averages, real tariffs or calibrated dispatch. Existing EV18:00 and dishwasher20:00 baselines remain fixed and availability prevents unavailable midday charging. `demo-activity.ts` integrates hourly AC exactly across fractional hours and midnight to48h.
+
+Background mechanisms: [CAISO duck curve](https://www.caiso.com/documents/flexibleresourceshelprenewables_fastfacts.pdf), [EIA net-load explanation](https://www.eia.gov/todayinenergy/detail.php?id=56880), [EIA residential electricity](https://www.eia.gov/energyexplained/use-of-energy/electricity-use-in-homes.php). Numeric curves and occupancy weights are authored; no source is claimed to provide them.
+
+Verification:138 automated tests, lint, TypeScript and production build pass. Actual browser review covered five viewport sizes and the end-to-end completion flow. On320px screens, optional expanded Help can cover part of the planning area; Less help, minimize or Escape dismisses it. The compact guide leaves camera/clock controls accessible.

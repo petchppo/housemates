@@ -98,3 +98,9 @@ Guided demo milestone complete. User’s synthetic-only weather correction is im
 Lead owns onboarding integration, focus/scroll navigation, responsive layout, docs, real browser QA and final gates. Scene specialist owns original landmark geometry and existing renderer integration. Guide specialist owns tutorial data/component and Pip aesthetics. Metadata/review specialist owns cultural landmark metadata and independent source/visual review. Shared interfaces are fixed before integration; no competing writes or specialist commits.
 
 Review loop: scoped checks → six rendered city builds → NPC paging/help/minimize/navigation → desktop/tablet/phone/narrow/landscape screenshots → independent review → targeted repairs → re-review → full lint/TypeScript/tests/build → documented local checkpoint. Any deployment blocker is documented as a placeholder; never claim an unverified deployment.
+
+## Move-in, floating guide and daily energy — complete
+
+Lead owns completed-home route/dashboard, onboarding handoff, profile/objective integration, responsive charts, docs and browser QA. Guide specialist owns floating portal, anchor placement/cleanup, compact dialogue and regression tests. Energy specialist owns regional net-load signals, AC ledger, validated objective persistence and calculation tests. Scene/review specialist owns explicit build completion semantics, AC visual activation, completion regressions and independent visual review.
+
+Acceptance: click scene/primary/Pip completion actions; preserve objective and setup across route/refresh; validate blocked/corrupt storage paths; baseline vs optimized UI with invariant AC; midnight/end-of-horizon totals; review five viewports including expanded help and control collisions. Run all gates, repair concrete review findings, document and checkpoint.

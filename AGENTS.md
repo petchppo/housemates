@@ -65,3 +65,9 @@ Pip is a scripted 3D guide. Photo recognition is optional local CLIP in a worker
 Orchestrators decide routine product, design and implementation details within the authorized project scope; avoid repeated confirmation. Tool permission controls still apply. Preserve successful local functionality. If a deployment attempt fails, leave an honest placeholder and record the exact blocker for morning; never claim a public deployment without verifying it.
 
 City landmarks are original symbolic miniatures, not geographic replicas. Reuse the existing Three.js construction/lifecycle path and preserve the legacy household scene when no city is selected. Pip’s tutorial is written guidance with explicit navigation; it must not mutate setup or planning state. On narrow screens expanded dialogue stays in ordinary flow; a minimized guide may remain sticky. Review actual six-city scenes and NPC controls before acceptance.
+
+## Latest flow and energy boundaries
+
+The latest user instruction supersedes the inline/ordinary-flow guide: use floating Pip with next-action anchoring, compact optional help and explicit advance callbacks. Keep the mascot renderer mounted across context changes. No auto-advance on scroll/read; leave camera and clock controls accessible.
+
+`/demo/home` is the completed setup destination; preserve optional validated planningMode across completion. Animation skip is distinct from entering the home. Chill may display and animate a clearly labeled illustrative cooling trace, but no AC optimization or comfort guarantees. That trace partitions existing background cooling; never add it twice or include it in flexible-appliance savings. Legacy household/lab fixtures stay unchanged.

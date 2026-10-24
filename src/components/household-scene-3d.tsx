@@ -23,6 +23,9 @@ type Props = {
   construction?: { level: 0 | 1 | 2 | 3; replayKey: number };
   weatherKind?: WeatherKind;
   onConstructionComplete?: () => void;
+  onFinishBuild?: () => void;
+  finishBuildLabel?: string;
+  finishBuildDisabled?: boolean;
 };
 type Command = "left" | "right" | "up" | "down" | "in" | "out" | "reset";
 type Character = { entrance: THREE.Group; group: THREE.Group; eyes: THREE.Group; asleep: THREE.Group; ring: THREE.Mesh; indicator: THREE.Mesh; baseY: number; sleepBlend: number };
@@ -37,7 +40,7 @@ function nightWeight(hour: number) {
 }
 
 /** Original procedural geometry. All displayed appliance activity is simulated. */
-export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollProgress, regionTheme, residenceType, visibleAppliances, construction, weatherKind, onConstructionComplete }: Props) {
+export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollProgress, regionTheme, residenceType, visibleAppliances, construction, weatherKind, onConstructionComplete, onFinishBuild, finishBuildLabel, finishBuildDisabled }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const latest = useRef<Props>({ selected, onSelect, hour, activeIds, scrollProgress, regionTheme, residenceType, visibleAppliances, construction, weatherKind, onConstructionComplete });
   const buildCommand = useRef<(action: "skip" | "replay") => void>(() => {});
@@ -496,7 +499,7 @@ export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollPr
       world.rotation.y = reduced ? 0 : sceneRotation;
       mount.dataset.rotationDegrees = (world.rotation.y * 180 / Math.PI).toFixed(2);
       for (const id of Object.keys(characters) as ApplianceId[]) {
-        const character = characters[id], active = props.activeIds.includes(id) && id !== "chill";
+        const character = characters[id], active = props.activeIds.includes(id);
         const sleepTarget = active ? 0 : THREE.MathUtils.smoothstep(darkness, 0.5, 0.95);
         character.sleepBlend += (sleepTarget - character.sleepBlend) * blend;
         character.eyes.visible = character.sleepBlend < 0.995;
@@ -544,7 +547,7 @@ export function HouseholdScene3D({ selected, onSelect, hour, activeIds, scrollPr
     {unavailable && <div className="hm3d-fallback" role="status"><strong>The 3D view is taking a break.</strong><p>WebGL is unavailable or its context was lost. Appliance selection and the simulated planner still work.</p><button type="button" onClick={() => { setUnavailable(false); setGeneration((value) => value + 1); }}>Retry 3D view</button></div>}
     <div className="hm3d-toolbar" aria-label="3D view controls">
       <div className="hm3d-camera"><button type="button" aria-label="Rotate view left" onClick={() => command.current("left")}>↶</button><button type="button" aria-label="Rotate view right" onClick={() => command.current("right")}>↷</button><button type="button" aria-label="Zoom in" onClick={() => command.current("in")}>+</button><button type="button" aria-label="Zoom out" onClick={() => command.current("out")}>−</button><button type="button" onClick={() => command.current("reset")} aria-label="Reset camera view">Reset</button></div>
-      {construction && <div className="hm3d-build-controls" aria-label="Household construction controls"><button type="button" onClick={() => buildCommand.current("skip")}>Finish build</button><button type="button" onClick={() => buildCommand.current("replay")}>Replay build</button></div>}
+      {construction && <div className="hm3d-build-controls" aria-label="Household construction controls"><button type="button" disabled={finishBuildDisabled} onClick={() => { buildCommand.current("skip"); onFinishBuild?.(); }}>{finishBuildLabel ?? (onFinishBuild ? "Finish build" : "Skip animation")}</button><button type="button" onClick={() => buildCommand.current("replay")}>Replay build</button></div>}
       <span className="hm3d-hint">{focused ? "+/− to zoom · Esc to release" : "Drag to turn · Scroll through the day"}</span>
     </div>
     <p className="hm3d-access sr-only">Keyboard: focus the scene, then arrows to orbit, + / − to zoom, Home to reset. Motion follows the demo clock, never real devices.</p>

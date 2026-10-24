@@ -76,3 +76,6 @@ html:has(.demo-shell) { scroll-behavior:auto; }
 
 [id^="demo-"][id$="-controls"]{scroll-margin-top:90px;}
 @media(max-width:899px){.demo-guide{padding:0;background:transparent;} }
+
+.demo-completion{border:1px solid #b2c590;background:#edf3de;border-radius:14px;padding:20px;margin-bottom:18px;}.demo-completion .demo-eyebrow{color:#687f4a;margin-bottom:10px;}.demo-completion>.demo-next{margin:0;width:100%;gap:15px;}.demo-completion>p:last-child{font-size:12px;line-height:1.7;color:#6f7b60;margin-top:13px;}
+@media(max-width:899px){.demo-setup>.demo-completion{order:2;}.demo-shell{padding-bottom:150px;}}

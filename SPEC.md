@@ -81,3 +81,11 @@ Add original procedural miniatures to all six demo city builds: Golden Gate Brid
 Pip becomes a lilac-and-lime builder’s field guide with a small map/satchel and cream/violet game dialogue. Each onboarding chapter offers paged written guidance, contextual help, a control-navigation action, and minimize/reopen. Dialogue never advances setup, recruits appliances, changes constraints or pretends to be an AI response. Preserve keyboard controls, reduced motion and narrow-screen access.
 
 Latest authorization: orchestrating agents make routine project/design decisions autonomously. Respect actual tool permissions; do not request repeated confirmation for already-authorized work. If an attempted deployment fails, keep a clearly labeled placeholder and record the blocker for morning. No deployment destination is currently configured.
+
+## Completed-home flow, floating Pip and daily energy revision
+
+Move-in must lead to a functional completed home at `/demo/home`. The preview’s animation-only control is called Skip animation until the final step; Finish build & enter home and Pip’s explicit Enter action open the same dashboard. Preserve the selected profile and planning objective; blocked persistence must retain a working session-only home. Missing/corrupt saved setup returns to onboarding.
+
+Replace the inline guide panel with a persistent floating mascot and compact speech anchored near the next action, with explicit advancement, optional help, minimize/reopen, responsive placement and reduced-motion support. Reading/position changes never advance setup; empty teams cannot proceed. Guide placement must leave primary controls usable.
+
+Use region-specific authored demand-minus-solar curves and separate hourly price/carbon signals, informed by the duck-curve mechanism. They are illustrative scenarios, not actual market measurements. Fixed original EV18:00 and dishwasher20:00 routines represent one workday; optimization respects availability/deadlines. Display Chill’s weather/occupancy-dependent cooling draw, hourly energy/cost/carbon and48h accumulated trace. AC remains unoptimized and is the existing background-cooling portion, never counted twice or claimed as a flexible-appliance saving. Preserve legacy scheduler fixtures.
