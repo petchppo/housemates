@@ -4,14 +4,14 @@ import type { ApplianceAgent } from "@/domain/appliances";
 export const applianceAgents = [
   {
     id: "evie", name: "Evie", role: "The electric vehicle", kind: "ev",
-    personality: "Easygoing, with a very firm morning deadline.",
+    personality: "Energetic, ambitious, and a little anxious about the morning commute.",
     introduction: "I’m happy to charge later. Just get me ready for the morning commute.",
     simulated: true,
-    constraints: { energyNeededKwh: 14, maxPowerKw: 7, availableFromHour: 18, readyByHour: 31 },
+    constraints: { energyNeededKwh: 12, maxPowerKw: 7, availableFromHour: 18, readyByHour: 31 },
   },
   {
     id: "bubbles", name: "Bubbles", role: "The dishwasher", kind: "dishwasher",
-    personality: "A night owl who likes to finish what they start.",
+    personality: "Playful, cooperative, and occasionally dramatic about the dishes.",
     introduction: "Dinner’s done. I can wait for a better hour, as long as breakfast plates are ready.",
     simulated: true,
     constraints: { cycleHours: 2, cycleEnergyKwh: 1.2, earliestStartHour: 20, finishByHour: 31, interruptible: false },
