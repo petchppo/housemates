@@ -32,3 +32,10 @@
   .hm3d-topline { top: 8px; gap: 6px; }
   .hm3d-topline span { padding: 4px 6px; }
 }
+
+.hm3d-constructing .hm3d-toolbar { position: static; flex: 0 0 auto; padding: 7px 12px; background: #f7f4eb; border-top: 1px solid #342b4615; }
+.hm3d-constructing .hm3d-hint { display: none; }
+.hm3d-build-controls { display: flex; gap: 5px; pointer-events: auto; }
+.hm3d-build-controls button { min-height: 44px; padding: 8px 11px; border: 1px solid #75657955; border-radius: 6px; background: #fffaf0; color: #4f455d; font: 700 11px/1.2 "Courier New", monospace; cursor: pointer; }
+.hm3d-build-controls button:hover { background: #e6e9d6; }
+@media(max-width: 420px) { .hm3d-constructing .hm3d-toolbar { justify-content: center; gap: 7px; }.hm3d-build-controls { width: 100%; justify-content: center; }.hm3d-build-controls button { flex: 1; } }

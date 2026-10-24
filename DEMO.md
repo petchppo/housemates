@@ -54,3 +54,13 @@ Quest controls are separate from the API-placeholder composer. Their computed re
 Synthetic prices and carbon intensity repeat over 48 fictional hours. Carbon is a modeled average-intensity estimate, not measured or necessarily avoided marginal emissions. Taxes, fixed charges, charging losses, other loads, and AC savings are excluded. Chill has no thermal model and is not optimized. No external model/network request is made for the preview reply. The underlying deterministic intent API remains available for future agent integration.
 
 The world uses Three.js/WebGL; the phone frame uses CSS 3D. Both are local visual demonstrations. Scene statistics come from schedule intervals, including partial hours, rather than fabricated activity or hardcoded savings. This document is a presentation guide; PROGRESS.md records the checks and visual reviews actually completed for each checkpoint. Browser-sized mobile testing is not a claim of testing physical smart-home hardware.
+
+## Guided onboarding demonstration (about 2 minutes)
+
+1. From `/`, choose **Join the demo**. Pick Bangkok to see palms and the island drop into place. Pip introduces each step.
+2. Choose **Build here**, then **Apartment** and **Place my home**. Use Replay build to repeat the construction, or Finish build to skip it.
+3. Inspect the **synthetic** weather card. Increase the temperature with Try a different day and compare illustrative background cooling demand. This is separate from appliance savings.
+4. Choose **Meet my team**, then recruit Evie and Bubbles. Each lands in the scene. Chill remains optional and excluded from optimization.
+5. Optional camera path: Add from a photo or camera → Choose a photo / Take a photo → Suggest appliance on this device. Allow the first-use model download in advance of a live judging demo. Inspect the suggestion, manually choose the matching appliance, then Confirm housemate. No photo leaves the device. Manual selection also works without any model download.
+6. Choose **Move in**. Switch cost/carbon/balanced objectives and scrub the simulation clock. Explain that rates and appliance activity are simulated, while calculations actually run.
+7. Refresh and use Continue saved home to verify setup persistence. Messaging-platform integration is explicitly the next chapter.

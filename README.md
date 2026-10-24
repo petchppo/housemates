@@ -127,3 +127,9 @@ Unique useful actions award 25 XP, with levels at 0/50/100/175 XP. Duplicate rew
 [SPEC.md](SPEC.md) contains product and acceptance requirements; [PLAN.md](PLAN.md) defines phases, ownership, and dependencies; [PROGRESS.md](PROGRESS.md) records actual findings, repairs, checks, and checkpoints; [AGENTS.md](AGENTS.md) contains concise coding/testing/safety/coordination rules. Native specialists work on disjoint files. Each bounded task follows implement → verify → inspect → repair → reverify → independent review → integrate → checkpoint → continue. No external orchestration framework or documentation package is required.
 
 Public deployment and remote pushes are not part of this local mission. Use `npm run build` then `npm start` for a production preview after stopping the development server occupying that port, or choose another explicit local port. Do not interrupt an already-working demo unnecessarily.
+
+## Guided demo
+
+Open `/demo`, or choose **Join the demo** on the homepage. Pip guides region, residence, synthetic weather and appliance-team setup while the 3D world assembles. Optional camera/photo suggestions run on-device in a worker; first use downloads about 190 MB. Manual confirmation is always required. Region/home/team/weather choices save separately from existing household plans.
+
+See [ONBOARDING.md](ONBOARDING.md) for the pipeline, model/data boundaries, architecture and review workflow. Weather is synthetic only; messaging-platform integration is deferred. The only new runtime dependency for this milestone is `@huggingface/transformers`; the existing Three.js renderer is extended.

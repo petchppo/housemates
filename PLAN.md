@@ -84,3 +84,11 @@ Design revision passed the screenshot repair/review loop, browser interaction ch
 Use Three.js directly, without a second React renderer or downloaded assets. Preserve the deterministic engine and persistence. Implement → inspect rendered dimensions/scroll/lighting → repair oversized controls, tiny art/type, clipping and lifecycle defects → independent re-review → lint/typecheck/tests/build → local checkpoint. User steering specifically requires a larger model, cleaner buttons and softer gradual day/night transitions.
 
 Completed the actual 3D / scroll-play implementation and visual repair loop. Latest user steering replaces the full orbit with a front-facing arc and ties scroll to a full simulated day. Scene lighting and sky blend together. Final verification and limitations are recorded in PROGRESS.md; release remains local.
+
+## Guided demo mission — active
+
+Lead: /demo route, guided state machine, weather/stat UI, setup persistence, homepage entry, integration, browser QA and docs. Scene specialist: extend existing Three.js renderer with region/residence variants and staged construction. Data specialist: typed preset scenarios, weather normalization/fallback, reusable engine integration and tests. Mascot/capture specialist: original 3D guide and local photo-confirmation component. Exclusive ownership; no specialist commits.
+
+Implement → scoped checks → integrated browser journey → actual desktop/mobile screenshots reviewed by independent specialists → repair/review until no material findings → full lint/typecheck/tests/build → update evidence and local checkpoint. Verify step back/change/replay, weather failure/stale response, photo cancellation, saved setup restore, selected-team calculations and existing routes. No external messaging integration in this milestone.
+
+Guided demo milestone complete. User’s synthetic-only weather correction is implemented; optional real browser-local image suggestions replace the initial manual-only placeholder. Independent visual/source reviews and final 117-test, lint, TypeScript, production-build gates passed. See PROGRESS.md for actual repairs/evidence and ONBOARDING.md/RECOGNITION.md for the handoff.

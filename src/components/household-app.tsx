@@ -140,7 +140,7 @@ export function HouseholdApp() {
     {trainingNotice && <div role="status" className="household-reward mt-4 flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-950"><span>✦ {trainingNotice}</span><button type="button" aria-label="Dismiss training update" onClick={() => setTrainingNotice("")} className="px-2 py-1">×</button></div>}
     <main className={view === "parliament" ? "" : "hh-secondary"} aria-busy={!ready}>
       {!ready ? <p className="p-8 text-center text-stone-500">Getting the household together…</p> : view === "parliament" ? <>
-        <div className="hh-intro"><div><p className="hh-kicker">PRESS PLAY / A HOUSEHOLD ADVENTURE</p><h1>Your home has<br/><em>a life of its own.</em></h1></div><p>Scroll through a day in your world. Drag to turn the view.<br/>Run an energy quest, meet your party, and watch the simulated day unfold.</p></div>
+        <div className="hh-intro"><div><p className="hh-kicker">PRESS PLAY / A HOUSEHOLD ADVENTURE</p><h1>Your home has<br/><em>a life of its own.</em></h1></div><p>Scroll through a day in your world. Drag to turn the view.<br/>Run an energy quest, meet your party, and watch the simulated day unfold.<br/><Link href="/demo" className="underline underline-offset-4">Join the demo: build your own world ↗</Link></p></div>
         <div className="hh-play-sequence">
           <section className="hh-stage" aria-label="Interactive household"><HouseholdWorld key={worldRevision} plan={plan} training={state.training} onAction={send} onInspect={() => setView("schedule")}/></section>
           <PhoneStory/>

@@ -1,0 +1,6 @@
+.hm-guide-mascot { position:relative; width:min(280px,100%); aspect-ratio:1; min-width:0; isolation:isolate; }
+.hm-guide-canvas,.hm-guide-fallback { position:absolute; inset:0; width:100%; height:100%; }
+.hm-guide-canvas canvas { display:block; width:100%; height:100%; }
+.hm-guide-fallback { filter:drop-shadow(0 8px 12px #73598c12); }
+.hm-guide-canvas[hidden] { display:none; }
+@media(max-width:640px) { .hm-guide-mascot { width:min(220px,100%); } }

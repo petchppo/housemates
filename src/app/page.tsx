@@ -32,12 +32,12 @@ export default function Home() {
             <p className="eyebrow mb-5"><span className="mr-2 inline-block h-2 w-2 rounded-full bg-emerald-700"/>A little teamwork. A lighter footprint.</p>
             <h1 id="intro" className="max-w-xl text-5xl font-semibold leading-[1.08] tracking-[-0.055em] sm:text-6xl">Small appliances.<br/><span className="text-emerald-800">Big main-character energy.</span></h1>
             <p className="mt-6 max-w-md text-base leading-7 text-stone-600">Meet the appliances with a plan. Housemates is an AI-powered household energy-planning concept where your EV, dishwasher, and AC work together around your day.</p>
-            <a href="#housemates" className="mt-8 inline-flex items-center gap-6 rounded-full bg-emerald-900 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-emerald-800">Meet your housemates <span aria-hidden="true">↗</span></a>
+            <Link href="/demo" className="mt-8 inline-flex items-center gap-6 rounded-full bg-emerald-900 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-emerald-800">Join the demo <span aria-hidden="true">↗</span></Link>
             <Link href="/household" className="ml-0 mt-4 inline-flex rounded-full border border-emerald-800 px-6 py-3 text-sm font-semibold text-emerald-900 sm:ml-3">Enter Appliance Parliament ↗</Link>
             <p className="mt-4 text-xs text-stone-500">Your comfort and deadlines come first.</p>
           </div>
 
-          <div className="hh-home-party"><p className="eyebrow">Choose your party. Build a better routine.</p><div className="hh-home-sprites">{applianceAgents.map(agent=><Link key={agent.id} href="/household" className={`hh-home-sprite ${agent.id}`}><ApplianceIcon id={agent.id}/><strong>{agent.name}</strong><span>LV.01 · MEET ↗</span></Link>)}</div><p className="hh-kicker">A whole little world is waiting.</p><Link href="/household" className="hh-start-game">ENTER YOUR WORLD →</Link></div>
+          <div className="hh-home-party"><p className="eyebrow">Choose your party. Build a better routine.</p><div className="hh-home-sprites">{applianceAgents.map(agent=><Link key={agent.id} href="/household" className={`hh-home-sprite ${agent.id}`}><ApplianceIcon id={agent.id}/><strong>{agent.name}</strong><span>LV.01 · MEET ↗</span></Link>)}</div><p className="hh-kicker">A whole little world is waiting.</p><Link href="/demo" className="hh-start-game">BUILD YOUR LITTLE WORLD →</Link></div>
         </section>
 
         <PhoneStory/>

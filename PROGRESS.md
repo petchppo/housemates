@@ -193,3 +193,40 @@ Three specialists implemented disjoint scene, phone/scroll, and simulation/sprit
 The household is actual WebGL geometry, not real hardware or a physics/thermal model. The iPhone is a CSS perspective frame with sample dialogue. Live replies remain placeholders pending an API. Simulation clock/scene selections are temporary; saved planning preferences retain browser-local persistence. Physical-device, assistive-technology and low-end GPU certification were not performed; reduced-motion behavior is implemented and source-reviewed. No external assets, paid calls, remote deployment or device connection were used.
 
 Final independent review accepted the repaired 390px, 320px and landscape screenshots; no material visual findings remain. Whitespace checks pass. Release is saved by the local commit titled `Add interactive 3D household and scroll-driven day cycle`; no push or deployment.
+
+## Guided onboarding demo — in progress
+
+Starting checkpoint a12674f, clean tree. User authorized autonomous multi-agent implementation and review loop. Region/residence choices, public weather with honest fallback, team recruitment, procedural construction and a platform mascot are in scope. No image-recognition API is configured; local capture/manual confirmation planned. New setup remains separate from saved household plans.
+
+### Guided onboarding completed — October 24, 2026
+
+User clarified **synthetic weather only** and authorized research into the best recognition approach. The finished demo makes no weather/geolocation request. Optional public-weather helper code remains dormant and tested for possible future use; it is not imported by the onboarding UI. Camera setup now supports real optional on-device CLIP rather than a recognition placeholder.
+
+Implemented `/demo` and homepage/household Join-the-demo links; five guided stages; six regional landscapes; apartment/townhouse/detached models; staged ground/path/planting/building/roof/weather/appliance drop-ins; finish/replay; original 3D Pip and contextual guidance; synthetic weather graph and bounded what-if controls; selected-team optimizer integration; local setup persistence separate from household memory; and optional local-photo suggestions with manual confirmation. ONBOARDING.md explains the pipeline/workflow; RECOGNITION.md records model details, test photographs and limitations.
+
+### Review and repair evidence
+
+- Scene specialist extended one existing Three.js renderer. Data specialist wrote pure scenario/weather/profile helpers and tests. Guide/capture specialist implemented mascot, photo handling, worker inference and tests. Lead owned route/UI/state/integration. Each lane ran scoped checks; different specialists reviewed source and actual renders.
+- A stale development-server module produced an SSR/client mismatch even though emitted chunks were current. A controlled preview restart fixed it; subsequent reloads and all four routes produced no new runtime errors. The two old diagnostic log entries remain historical evidence, not unresolved errors.
+- First responsive render overflowed because an auto-margin flex child used intrinsic width. Explicit width/min-width and corrected mobile ordering fixed it. Pip now stays sticky while mobile controls scroll; actual 390px and 320px checks measured guide top at 4px and no horizontal overflow.
+- Independent review repaired fractional-hour rounding and the hour-48 label, an empty saved team bypass, stale saved notices after edits, and unselected cloudy-button state. Weather offsets/conditions now persist with validated profiles.
+- Real initial dishwasher recognition abstained because a vague negative category overlapped the intended class. The engineer used more specific, general descriptions for supported and negative classes, retaining the same acceptance thresholds. Browser WASM then suggested Dishwasher with relative score 0.967; a tiger returned unsupported (animal 0.963). These are observations, not confidence probabilities or an accuracy benchmark. Confirm remained disabled until manual choice. Retry/cancel and local-photo replacement were exercised; no teammate was silently added.
+- Reviewers actually viewed initial/repaired desktop/mobile scenes, distinct tropical and Nordic residences, early/middle/complete construction frames, recognition results, and final 1280×900, 768×1024, 390×844, 320×740, 844×390 captures. No material visual findings remain. Minor noted polish: the lawn tip is near the canvas edge on narrow phones, without clipping characters or controls.
+
+### Final verification
+
+- `npm run lint`: PASS.
+- `npm run typecheck`: PASS.
+- `npm test`: PASS, 117/117 (91 existing + 18 demo/weather + 8 recognition/lifecycle tests).
+- `npm run build`: PASS, including worker bundling and `/`, `/demo`, `/energy-parliament`, `/household`.
+- `git diff --check`: PASS; dependency audit reported zero known vulnerabilities.
+- Peer additionally checked 432 region/residence/team/objective combinations with independent sums and objective bounds.
+- Browser: join entry, stage navigation, region/home switching, temperature/scenery changes, add/remove, construction replay/build completion, actual positive and negative photo inference, mandatory confirmation, cancellation, save/refresh/resume including +10°C/rain, clock endpoint and sticky guide all exercised.
+- Synthetic Bangkok apartment cooling changed from 5.3 to 14.3 kWh when adding 10°C, while flexible appliance scheduling stayed separate. These are computed illustrative model outputs, not hardcoded UI values or real home estimates.
+- Browser: all five final dimensions have no horizontal overflow. Original household saved plan and 10pm cutoff remained unchanged; original scheduling lab still renders computed results. Homepage Join the demo leads to the new flow.
+
+### Release limitations
+
+Six representative city scenes, three residence types and three supported appliance characters are provided. Region rates/carbon and weather are synthetic; the background-demand formula is a transparent toy model. Camera capture uses the native mobile file/camera chooser; no physical-phone camera test or assistive-technology certification was performed. Recognition needs a modern worker/WASM-capable browser and roughly 190 MB first-use model/runtime download; offline first use and unsupported devices retain manual setup. Only a dishwasher photo and unrelated tiger photo were exercised as real inference cases; EV-charger and AC accuracy is not benchmarked. All suggestions require confirmation. Pip uses scripted text, not live conversational AI. Messaging integration and actual device control remain unimplemented.
+
+Temporary visual artifacts are under /private/tmp: housemates-onboarding-final-{desktop,tablet,mobile,small,landscape}.png, housemates-onboarding-guide-320.png, housemates-build-{early,middle,complete}.png and housemates-recognition-positive.png. No photos, model weights or QA images are committed as application assets. The local release is identified by `Build guided regional demo with local photo recognition`; no remote push or deployment.
