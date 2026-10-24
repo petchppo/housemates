@@ -87,8 +87,9 @@ const serverSnapshot = () => false;
 
 export function TutorialNpc({ onNavigate, onAdvance, canAdvance = true, completed = false, ...context }: TutorialNpcProps) {
   const mounted = useSyncExternalStore(subscribe, mountedSnapshot, serverSnapshot);
-  const [minimized, setMinimized] = useState(false);
+  const [minimized, setMinimized] = useState(completed);
   const [help, setHelp] = useState(false);
+  const [awayFromHomeControls, setAwayFromHomeControls] = useState(false);
   const [helpHeight, setHelpHeight] = useState(180);
   const [position, setPosition] = useState<Placement | null>(null);
   const coach = useRef<HTMLElement>(null);
@@ -101,7 +102,7 @@ export function TutorialNpc({ onNavigate, onAdvance, canAdvance = true, complete
     if (!mounted) return;
     let frame = 0;
     const anchor = document.getElementById(anchorId) ?? document.getElementById(`demo-${target}-controls`);
-    const protectedControls = Array.from(document.querySelectorAll<HTMLElement>(".hm3d-toolbar, #demo-home-objective, .dh-toggle"));
+    const protectedControls = Array.from(document.querySelectorAll<HTMLElement>(".hm3d-toolbar, #demo-home-objective, .dh-toggle, .apc-composer, .apc-voice-controls, .apc-approval-actions, .dh-run-controls"));
     const update = () => {
       frame = 0;
       const element = coach.current;
@@ -111,7 +112,9 @@ export function TutorialNpc({ onNavigate, onAdvance, canAdvance = true, complete
       const viewportHeight = viewport?.height ?? window.innerHeight;
       const viewportWidth = viewport?.width ?? window.innerWidth;
       const anchorBounds = anchor?.getBoundingClientRect() ?? null;
-      const exclusions = protectedControls.map(control => control.getBoundingClientRect()).filter(box => box.bottom > 0 && box.top < viewportHeight && box.width > 0 && box.height > 0);
+      // Setup guidance stays with the home controls, leaving conversations unobstructed.
+      setAwayFromHomeControls(completed && !!anchorBounds && anchorBounds.bottom <= 0);
+      const exclusions = Array.from(document.querySelectorAll<HTMLElement>(".hm3d-toolbar, #demo-home-objective, .dh-toggle, .apc-composer, .apc-voice-controls, .apc-approval-actions, .apc-transcript, .dh-run-controls")).map(control => control.getBoundingClientRect()).filter(box => box.bottom > 0 && box.top < viewportHeight && box.width > 0 && box.height > 0);
       if (help) {
         const expanded = element.querySelector<HTMLElement>(".hm-tutorial-expanded");
         const baseHeight = bounds.height - (expanded?.getBoundingClientRect().height ?? 0);
@@ -150,7 +153,7 @@ export function TutorialNpc({ onNavigate, onAdvance, canAdvance = true, complete
   }, [mounted, anchorId, target, minimized, help, completed]);
   const message = getTutorialPrompt(context, completed);
   if (!mounted) return null;
-  return createPortal(<aside ref={coach} className={`hm-tutorial-npc${minimized ? " is-minimized" : ""}`} data-side={position?.side ?? "edge"} style={{ left: position?.left ?? 10, top: position?.top ?? 10, visibility: position ? "visible" : "hidden", "--pip-tip": `${position?.tip ?? 40}px`, "--pip-help-height": `${helpHeight}px` } as CSSProperties} aria-label="Pip’s setup guide" onKeyDown={event => {
+  return createPortal(<aside ref={coach} className={`hm-tutorial-npc${minimized ? " is-minimized" : ""}`} data-side={position?.side ?? "edge"} style={{ left: position?.left ?? 10, top: position?.top ?? 10, visibility: position && !awayFromHomeControls ? "visible" : "hidden", "--pip-tip": `${position?.tip ?? 40}px`, "--pip-help-height": `${helpHeight}px` } as CSSProperties} aria-label="Pip’s setup guide" onKeyDown={event => {
     if (event.key !== "Escape") return;
     event.preventDefault(); event.stopPropagation();
     if (help) { setHelp(false); coach.current?.querySelector<HTMLButtonElement>(`[aria-controls="${uid}-help"]`)?.focus(); }

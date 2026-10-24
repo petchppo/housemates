@@ -267,3 +267,24 @@ Review-driven repairs so far: distinguish animation skip from completion; preser
 New artifacts are local QA files: `/private/tmp/housemates-home-accepted-{desktop,tablet,mobile,small,landscape}.png`, `/private/tmp/housemates-help-reviewed-{mobile,small}.png`, `/private/tmp/housemates-help-landscape-final.png`, and `/private/tmp/housemates-completed-home-final.png`. Old overlap captures remain failure evidence, not acceptance screenshots. Release identified by local commit title `Complete move-in flow with floating guide and daily energy model`.
 
 Limits remain explicit: numeric grid/price/carbon/occupancy curves are synthetic, AC is a simple illustrative electrical-demand model without thermal inertia/equipment calibration, and household routines are one representative workday rather than inferred habits. AC is displayed but never optimized or physically controlled. Physical-phone and assistive-technology certification were not performed.
+
+## Appliance chat, browser calls and approved execution — 2026-10-24
+
+Continued verified foundation a41559e; preserved onboarding, home scene, original household and energy lab. Added a shared deterministic command/session engine, dashboard controller, interactive chat/proposal UI and optional native browser voice. No packages or API keys added. Request → computed projection → explicit approval → separate accelerated simulation → computed completion receipt. Chill remains a fixed cooling illustration.
+
+### Review and repairs
+
+Energy, voice and conversation specialists owned disjoint implementation/test files; the lead integrated dashboard/persistence and performed browser QA. Independent source review found proposal-ID reuse across a region change; IDs now remain monotonic across invalidation/reset and stale approval fails. Voice/UI review repaired external appliance selection retaining an old call, protected explicit transcript review, and prevented timer updates/old messages from triggering readout. Integration corrected direct reply source tags so opted-in readout works.
+
+Preview activity now explicitly says projected even while a separate approved run exists. Preview scrubbing cannot complete tasks or accrue execution savings. Actual phone/desktop screenshots found Pip colliding with call controls: the completed-home guide now starts compact and stays with its home controls, becoming hidden when scrolling into the conversation; its renderer remains mounted. Dynamic protected-control queries also cover newly rendered chat/approval controls.
+
+### Verification
+
+- Final lint, TypeScript, production build and 167 automated tests pass. Added 10 domain, 7 controller, 7 browser-voice and 5 chat-component regressions using actual sources with controlled browser/clock/storage adapters. Build generates all existing routes. Non-blocking tooling warnings: npm environment http-proxy option; Three.js CommonJS import in the existing test harness.
+- Actual browser: impossible EV deadline disables approval; correcting to 7 AM enables a computed plan; reviewed transcript containing approve cannot start execution; explicit approval starts, pause stops, preview Solar noon leaves the approved clock at 18:00, fast-forward completes with matching totals, reload restores completion, and New day clears the previous run. Typed Chill Status returns its separate modeled cooling trace. Call open stays microphone-off.
+- Bangkok carbon-first example: completed13.20 kWh, $1.25 and3.562 kg modeled CO₂e; comparison $1.30 and2.938 kg lower than fixed original routine. All values computed, not fixture claims or physical savings.
+- Rendered desktop1280×900, tablet768×1024, phone390×844, narrow320×740 and short landscape844×390 checked without horizontal overflow. Independent conversation specialist viewed actual screenshots and accepted phone call controls/readability; final revised captures reviewed after guide collision repair.
+
+### Boundaries
+
+Calls use browser speech, not telephony or a connected LLM. Recognition/readout may use browser-provider services; the UI discloses this. Physical microphone recognition and audible synthesis were not verified with a real recording; permission denial, unsupported browsers, timeout, stale events and cleanup are regression-tested. Typed fallback remains available. No app audio/transcript storage; only validated approved settings/progress persist, unfinished restores pause. The command parser supports bounded planning/status requests, not unrestricted conversation. Results become completed simulation records, never real device telemetry. No deployment target configured or deployment attempted. See VOICE.md.

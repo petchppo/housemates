@@ -133,3 +133,9 @@ Public deployment and remote pushes are not part of this local mission. Use `npm
 Open `/demo`, or choose **Join the demo** on the homepage. Pip guides region, residence, synthetic weather and appliance-team setup while the 3D world assembles. Optional camera/photo suggestions run on-device in a worker; first use downloads about 190 MB. Manual confirmation is always required. Region/home/team/weather choices save separately from existing household plans.
 
 See [ONBOARDING.md](ONBOARDING.md) for the pipeline, model/data boundaries, architecture and review workflow. Weather is synthetic only; messaging-platform integration is deferred. The only new runtime dependency for this milestone is `@huggingface/transformers`; the existing Three.js renderer is extended.
+
+## Interactive appliance chat and calls
+
+After setup, open `/demo/home` and choose **Talk to your team**. Request a plan by text or **Call → Listen → review transcript → Send**. Optional reply readout uses browser speech. Review calculated timing/cost/carbon, then **Approve & run simulation**. The simulation updates task progress and produces a completed receipt; preview scrubbing never executes tasks.
+
+No API key is required. This is a deterministic command assistant with optional browser voice, not a general-purpose LLM or connected appliance service. Voice support depends on the browser and may use its remote speech provider. See [VOICE.md](VOICE.md) for architecture, commands, persistence and limitations.

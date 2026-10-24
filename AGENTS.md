@@ -71,3 +71,9 @@ City landmarks are original symbolic miniatures, not geographic replicas. Reuse 
 The latest user instruction supersedes the inline/ordinary-flow guide: use floating Pip with next-action anchoring, compact optional help and explicit advance callbacks. Keep the mascot renderer mounted across context changes. No auto-advance on scroll/read; leave camera and clock controls accessible.
 
 `/demo/home` is the completed setup destination; preserve optional validated planningMode across completion. Animation skip is distinct from entering the home. Chill may display and animate a clearly labeled illustrative cooling trace, but no AC optimization or comfort guarantees. That trace partitions existing background cooling; never add it twice or include it in flexible-appliance savings. Legacy household/lab fixtures stay unchanged.
+
+## Calls and execution
+
+Use demo-commands.ts for both text and reviewed voice requests. Keep proposal, approved schedule, preview clock and execution clock distinct. Only explicit current-proposal approval can start a run; never infer consent from transcription. Restore unfinished runs paused; validate persisted inputs and recompute figures. Do not save audio/chat transcripts or claim synthetic completion is device-confirmed.
+
+Speech is optional browser functionality with explicit Listen and opt-in readout. Guard stale events, call-target changes, hidden pages and unmount. Browser providers may process audio/text remotely; do not promise offline processing. Preserve typed fallback and actual-hook/component regression coverage. See VOICE.md.

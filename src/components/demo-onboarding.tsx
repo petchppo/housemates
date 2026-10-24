@@ -119,7 +119,7 @@ export function DemoOnboarding({startAtHome=false}:{startAtHome?:boolean}) {
 
   return <div className="demo-shell">
     <header className="demo-header"><Link href="/" className="demo-brand"><span aria-hidden="true">⌂</span>housemates<span className="demo-brand-dot">.</span></Link><span className="demo-edition">A LITTLE WORLD / DEMO 01</span><Link href="/household" className="demo-exit">Existing household ↗</Link></header>
-    {completed?<DemoHomeDashboard scenario={scenario} mode={mode} onMode={setMode} notice={saveNotice} onEdit={()=>{setCompleted(false);go(0);}}/>:<>
+    {completed?<DemoHomeDashboard scenario={scenario} mode={mode} notice={saveNotice} onEdit={()=>{setCompleted(false);go(0);}}/>:<>
     <nav className="demo-progress" aria-label="Demo setup progress">{steps.map((label,index)=><button key={label} type="button" disabled={index>step} aria-current={step===index?"step":undefined} onClick={()=>go(index)}><span>{index<step?"✓":String(index+1).padStart(2,"0")}</span><b>{label}</b></button>)}</nav>
     <main className="demo-layout">
       <section className="demo-setup" aria-label={steps[step]}>

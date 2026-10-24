@@ -104,3 +104,9 @@ Review loop: scoped checks → six rendered city builds → NPC paging/help/mini
 Lead owns completed-home route/dashboard, onboarding handoff, profile/objective integration, responsive charts, docs and browser QA. Guide specialist owns floating portal, anchor placement/cleanup, compact dialogue and regression tests. Energy specialist owns regional net-load signals, AC ledger, validated objective persistence and calculation tests. Scene/review specialist owns explicit build completion semantics, AC visual activation, completion regressions and independent visual review.
 
 Acceptance: click scene/primary/Pip completion actions; preserve objective and setup across route/refresh; validate blocked/corrupt storage paths; baseline vs optimized UI with invariant AC; midnight/end-of-horizon totals; review five viewports including expanded help and control collisions. Run all gates, repair concrete review findings, document and checkpoint.
+
+## Appliance calls and approved simulation — complete
+
+Lead owns dashboard/controller integration, preview/execution separation, persistence adapter, browser journeys, documentation and final gates. Energy specialist owns pure command/session engine and domain/controller regressions. Voice specialist owns native speech lifecycle and regression tests plus independent command review. Conversation specialist owns chat/proposal/call UI, actual-component tests and independent screenshot review.
+
+Self-correction found and repaired stale proposal IDs across household changes, source tags suppressing readout, externally changed appliance selections retaining an old call, preview labels implying execution, and Pip covering call controls. Actual browser checks and full gates are recorded in PROGRESS.md. No deployment or external messaging service was configured.
