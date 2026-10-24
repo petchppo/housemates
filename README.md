@@ -11,7 +11,7 @@ npm install
 npm run dev -- --hostname 0.0.0.0
 ```
 
-Open http://localhost:3000 for the original homepage and http://localhost:3000/energy-parliament for the scheduling laboratory. The homepage also links to Energy Parliament.
+Open http://localhost:3000 for the preserved homepage, http://localhost:3000/household for the complete Appliance Parliament experience, and http://localhost:3000/energy-parliament for the scheduling laboratory. The homepage links to both. See [DEMO.md](DEMO.md) for the verified 90-second script.
 
 For a phone on the same Wi-Fi, use the laptop's local IP address, e.g. http://192.168.1.10:3000/energy-parliament. Some guest networks block connections between devices.
 
@@ -32,18 +32,25 @@ Tests use Node's built-in test runner. TypeScript compiles the engine and tests 
 src/
   app/                         Existing homepage, layout, and styles
     energy-parliament/page.tsx Scheduling test route
+    household/page.tsx         Integrated conversation/demo route
   components/
     appliance-icon.tsx         Shared appliance artwork
-    energy-parliament.tsx      Interactive controls and result presentation
+    energy-parliament.tsx      Laboratory and shared timeline
+    household-app.tsx          Chat, proposals, profiles, training, plan views
+    household-settings.tsx     Validated preference and load-profile editor
+    use-household.ts           Browser store, hydration, persistence, reset
   domain/
     appliances.ts              Agent identities and device-specific constraints
     energy.ts                  Shared cost/carbon arithmetic
-    scheduling.ts              Pure validation, schedule evaluation, search, comparisons
+    scheduling.ts              Pure validation, evaluation, search, comparisons
+    household.ts               Shared state and canonical proposal fingerprints
+    conversation.ts            Typed intent parsing and computed dialogue
+    memory.ts                  Validated local snapshots, XP and useful unlocks
   data/
     appliances.ts              Three simulated appliance definitions
     energy.ts                  Existing 24-hour synthetic energy profile
     scheduling.ts              Default windows and fixed baseline starts
-tests/scheduling.test.ts        Automated domain tests
+tests/                         Engine, conversation, memory, browser-store regressions
 ```
 
 ## Scheduling API
@@ -60,7 +67,7 @@ A `SchedulingRequest` wraps an existing flexible appliance definition with an in
 ## Planning model and optimization
 
 - Evie needs **12 kWh**, with configurable constant charging power (default 7 kW), availability from Day 1 at 6pm, and default completion by Day 2 at 7am. This version searches one uninterrupted charging session, with exact energy accounting for its partial final hour. It does not search split charging sessions or variable power.
-- Bubbles runs a two-hour uninterrupted cycle using 1.2 kWh total. The model distributes this evenly at 0.6 kW. Availability starts at Day 1 at 8pm; default completion is Day 2 at 7am.
+- Bubbles runs a two-hour uninterrupted cycle using 1.2 kWh total. The default model distributes this evenly at 0.6 kW. Preferences can configure cycle duration, total energy, and an optional hourly kWh profile (one finite nonnegative value per cycle hour, summing to total energy). Profile power is modeled as constant within each hour; subhour spikes are excluded. Availability starts at Day 1 at 8pm; default completion is Day 2 at 7am.
 - Chill remains in the project and is excluded from optimization and all reported flexible-appliance totals. AC scheduling needs a thermal and comfort model.
 - The planning horizon is `[0, 48]`. Starts, availability, window boundaries, and deadlines are whole hours; end times may be fractional. Hour 31 is Day 2 at 7am. Hour 48 is the ending midnight boundary. A complete session must fit inside the horizon.
 - The synthetic 24-hour profile repeats with `hour % 24` for Day 2. This is a fictional two-day scenario in America/Los_Angeles without an actual date or DST transition.
@@ -76,8 +83,25 @@ Each occupied interval uses the shared arithmetic helper: `costUsd = kWh × $/kW
 
 ## Simulation contract and limitations
 
-All appliance activity is simulated. Homepage dialogue is scripted. No real telemetry, device control, AI conversation, or measured savings is claimed. Planning inputs live in browser memory and reset on refresh.
+All appliance activity is simulated. Homepage dialogue is scripted. No real telemetry, device control, AI conversation, or measured savings is claimed. The integrated /household stores preferences, settings, recent conversation, training, and up to 12 saved input snapshots in this browser. The laboratory remains an isolated, session-only test tool. Saved totals are recomputed from validated inputs, not trusted from storage. Memory is not synchronized between devices.
 
 Energy data is hand-authored and synthetic, not a utility tariff, forecast, or live grid feed. It approximates a California weekday pattern: expensive 4–9pm electricity and lower midday carbon intensity. Currency is USD; carbon is estimated operational grid emissions in g CO₂e/kWh, not lifecycle emissions. Taxes, fixed charges, charging losses, exports, owned solar, demand charges, and other household loads are excluded. Results are estimates under these assumptions, not a complete bill or real-world carbon measurement.
 
-Hourly start resolution, constant power, uninterrupted EV charging, and the repeated Day 2 profile limit what the optimizer can explore. There is no persistence, AI chat, gamification, or device integration.
+Hourly starts, continuous constant-power EV charging, per-hour dishwasher profiles, and repeated Day 2 rates limit the optimizer. Conversation uses deterministic intent rules rather than an LLM; unsupported or ambiguous requests ask for clarification. There is no device integration, account system, external energy feed, or multi-device synchronization.
+
+
+## Conversation, memory, and training
+
+Appliance Parliament accepts whole-hour AM/PM deadlines, inclusive start windows, explicit Day 1/Day 2 qualifiers, cost/carbon/balanced objectives, revisions, rejections, calculation explanations, and approval. “Don’t run the dishwasher after 10 PM” is a completion cutoff at hour 22. Breakfast defaults to Day 2 at 7am; an earlier remembered cutoff stays enforced. Use Preferences for energy, power, duration, consumption profile, and shared limits.
+
+`sendHouseholdMessage` and `updateHouseholdSettings` are pure conversation entry points. The optimizer supplies all schedule figures. A proposal fingerprint binds approval to current planning inputs; stale, rejected, or infeasible proposals cannot be saved. Approval saves a simulated plan only and sends no physical commands.
+
+Browser storage uses a versioned, bounded schema. Malformed state recovers with an explanation; infeasible but structurally valid settings remain editable. Reads/writes/removal failures fall back to session-only state with truthful notices. Reset Demo clears only this app’s browser memory, with confirmation and failure handling. Old context is pruned rather than growing without bound. No secrets or authentication are involved.
+
+Unique useful actions award 25 XP, with levels at 0/50/100/175 XP. Duplicate rewards are suppressed. Level 2 unlocks a remembered-routine shortcut (comfort guidance for Chill); level 3 links to objective comparison; level 4 links to household routines and settings. Core planning is never locked. Lessons and self-reports are labeled as learning/habit actions, never verified savings. Reset returns all progress to defaults.
+
+## Autonomous workflow and handoff
+
+[SPEC.md](SPEC.md) contains product and acceptance requirements; [PLAN.md](PLAN.md) defines phases, ownership, and dependencies; [PROGRESS.md](PROGRESS.md) records actual findings, repairs, checks, and checkpoints; [AGENTS.md](AGENTS.md) contains concise coding/testing/safety/coordination rules. Native specialists work on disjoint files. Each bounded task follows implement → verify → inspect → repair → reverify → independent review → integrate → checkpoint → continue. No external orchestration framework or documentation package is required.
+
+Public deployment and remote pushes are not part of this local mission. Use `npm run build` then `npm start` for a production preview after stopping the development server occupying that port, or choose another explicit local port. Do not interrupt an already-working demo unnecessarily.

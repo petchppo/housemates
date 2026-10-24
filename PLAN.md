@@ -1,5 +1,7 @@
 # Housemates execution plan
 
+Execution status: Phases 2–5 are complete and verified locally. See PROGRESS.md for actual evidence, repaired findings, limitations, and Git checkpoints. The plan below is retained as the execution/handoff record.
+
 ## Starting state
 
 Foundation checkpoint: `061cf28` on main. Working tree already contains the functioning Phase 2 scheduler and /energy-parliament, previously verified with 23 tests, lint, typecheck, build, and browser checks. Preserve all these changes. Create a mission branch and checkpoint the existing engine after current checks and independent review.

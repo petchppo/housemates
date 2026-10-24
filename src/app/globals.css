@@ -18,3 +18,17 @@ body { background: var(--background); color: var(--foreground); font-family: Ari
 .bubbles { background: #f0dfc6; color: #96713d; }
 .chill { background: #dbe7e9; color: #4c7b86; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+.household-progress { appearance: none; overflow: hidden; border-radius: 999px; background: #e8ebdf; }
+.household-progress::-webkit-progress-bar { background: #e8ebdf; border-radius: 999px; }
+.household-progress::-webkit-progress-value { background: #406e4c; border-radius: 999px; transition: width .45s ease; }
+.household-progress::-moz-progress-bar { background: #406e4c; border-radius: 999px; }
+.household-dialog::backdrop { background: rgb(20 35 25 / .4); backdrop-filter: blur(3px); }
+.household-chat-log { scrollbar-color: #c2ceba transparent; scrollbar-width: thin; }
+.household-reward { animation: household-arrive .3s ease-out; }
+@keyframes household-arrive { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .household-reward { animation: none; }
+  .household-progress::-webkit-progress-value { transition: none; }
+  .household-progress::-moz-progress-bar { transition: none; }
+}
