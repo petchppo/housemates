@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./household-theme.css";
 
 export const metadata: Metadata = {
   title: "Housemates — A smarter energy plan",

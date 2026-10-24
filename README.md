@@ -36,7 +36,9 @@ src/
   components/
     appliance-icon.tsx         Shared appliance artwork
     energy-parliament.tsx      Laboratory and shared timeline
-    household-app.tsx          Chat, proposals, profiles, training, plan views
+    household-app.tsx          World shell, proposals, training, plan views
+    household-world.tsx        Original interactive SVG scene + 3D phone preview
+    household-world.css        Scoped illustration, phone, motion and controls
     household-settings.tsx     Validated preference and load-profile editor
     use-household.ts           Browser store, hydration, persistence, reset
   domain/
@@ -87,12 +89,14 @@ All appliance activity is simulated. Homepage dialogue is scripted. No real tele
 
 Energy data is hand-authored and synthetic, not a utility tariff, forecast, or live grid feed. It approximates a California weekday pattern: expensive 4–9pm electricity and lower midday carbon intensity. Currency is USD; carbon is estimated operational grid emissions in g CO₂e/kWh, not lifecycle emissions. Taxes, fixed charges, charging losses, exports, owned solar, demand charges, and other household loads are excluded. Results are estimates under these assumptions, not a complete bill or real-world carbon measurement.
 
-Hourly starts, continuous constant-power EV charging, per-hour dishwasher profiles, and repeated Day 2 rates limit the optimizer. Conversation uses deterministic intent rules rather than an LLM; unsupported or ambiguous requests ask for clarification. There is no device integration, account system, external energy feed, or multi-device synchronization.
+Hourly starts, continuous constant-power EV charging, per-hour dishwasher profiles, and repeated Day 2 rates limit the optimizer. The judge-facing text interaction currently uses API placeholders. Simulation controls use deterministic intent rules rather than an LLM; unsupported or ambiguous domain requests ask for clarification. There is no device integration, account system, external energy feed, or multi-device synchronization.
 
 
 ## Conversation, memory, and training
 
-Appliance Parliament accepts whole-hour AM/PM deadlines, inclusive start windows, explicit Day 1/Day 2 qualifiers, cost/carbon/balanced objectives, revisions, rejections, calculation explanations, and approval. “Don’t run the dishwasher after 10 PM” is a completion cutoff at hour 22. Breakfast defaults to Day 2 at 7am; an earlier remembered cutoff stays enforced. Use Preferences for energy, power, duration, consumption profile, and shared limits.
+The playable household scene accepts judge input into a clearly labeled local API-placeholder response. It makes no network/model request and does not change planning constraints. Separate simulation buttons run the existing deterministic planner. The tilted phone contains a scripted sample, not a live chat.
+
+The underlying deterministic conversation API accepts whole-hour AM/PM deadlines, inclusive start windows, explicit Day 1/Day 2 qualifiers, cost/carbon/balanced objectives, revisions, rejections, calculation explanations, and approval. “Don’t run the dishwasher after 10 PM” is a completion cutoff at hour 22. Breakfast defaults to Day 2 at 7am; an earlier remembered cutoff stays enforced. Use Preferences for energy, power, duration, consumption profile, and shared limits.
 
 `sendHouseholdMessage` and `updateHouseholdSettings` are pure conversation entry points. The optimizer supplies all schedule figures. A proposal fingerprint binds approval to current planning inputs; stale, rejected, or infeasible proposals cannot be saved. Approval saves a simulated plan only and sends no physical commands.
 

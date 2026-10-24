@@ -123,3 +123,42 @@ Independent reviewers reported **no outstanding blocking findings**. The lead se
 2. Richer tariff/charging-loss and interrupted-EV models, with corresponding tests and explicit assumptions.
 3. Real energy-data providers and, separately, carefully authorized device adapters and defensible AC thermal models.
 4. Optional cross-device persistence, voice input and additional animation after core reliability.
+
+## Design revision — complete and verified
+
+Starting checkpoint: `6a8ab67`, clean working tree. Redesigned the existing UI without changing the engine, data, storage schema, or domain tests. Original code-native SVG artwork and CSS perspective provide a low-poly miniature home, selectable Evie/Bubbles/Chill, day/dusk lighting, pixel-style controls, and a dimensional phone with a readable scripted conversation. The homepage reuses the phone and new theme while retaining its appliance and energy-data content.
+
+The judge-facing composer deliberately displays an API-not-connected placeholder. It makes no network/model request and does not change constraints. Separate simulation controls continue to run the real deterministic planner. Preferences, training, approval, saved plans, and an expandable keyboard-scrollable planning history remain available. No packages, copied characters, downloaded assets, or external services were added.
+
+### Actual self-correcting visual team
+
+- Lead: integrated shell, navigation, homepage, accessibility, browser verification, documentation and final checks.
+- Scene specialist: owned only `household-world.tsx` and `.css`; built original art, interactive controls and phone; ran scoped lint and repaired reviewer findings.
+- Independent visual reviewer: actually viewed desktop and mobile screenshots, reviewed composition, readability and honest labels; re-viewed repaired screenshots and accepted them.
+- Independent mobile/accessibility reviewer: actually viewed desktop/mobile screenshots and final household/homepage phone-width captures; reviewed source for targets, motion and callbacks; accepted final repairs.
+
+First renders exposed tiny phone text, faint API/simulation disclosures, undersized touch targets, and a phone preview too far down the mobile page. Repairs enlarged phone dialogue to 13px, key disclosures to at least 11px, controls to 44–46px and the mobile composer to 16px; darkened text; moved the phone after the scene; and balanced narrow navigation into two columns. Final polish left-aligned phone messages, removed a decorative mobile caption overlap and raised composer-placeholder contrast to 5.30:1. Source-only review was not counted as visual acceptance.
+
+### Verification after redesign
+
+- `npm run lint`: PASS.
+- `npm run typecheck`: PASS.
+- `npm test`: PASS, all 84 tests; existing domain and browser-store regressions unchanged.
+- `npm run build`: PASS, all three application routes generated. The initial sandboxed build failed because the Turbopack CSS worker could not bind its local port; the same build succeeded with the required execution permission. No application workaround or dependency change was needed.
+- `git diff --check`: PASS.
+- Browser error log: empty.
+- Desktop 1280px and mobile 390px: scene/homepage reviewed; all four household panels checked for horizontal overflow (none).
+- Character selection, day/dusk toggle, phone straightening and Enter submission work. Placeholder text did not mutate the original plan or cutoff.
+- Morning scenario → quiet-hours cutoff → computed proposal → approval/save works. The tested default quiet-hours plan was $3.21 / 3.505 kg CO₂e; these are observed engine outputs, not constants in the UI.
+- Proposal focus moves accessibly after scenario controls. Day 2 timeline and training/preferences views remain accessible.
+- Impossible Bubbles deadline produced explicit infeasibility and no approval. Reject withdrew approval; restored constraints produced feasible plans.
+- Reset initially focused the safe cancel control; Escape canceled. Confirmed reset cleared scene preview and stored state; refresh retained defaults.
+- Repeated morning/cutoff/approval then refresh preserved the saved plan and 10pm cutoff without a false XP announcement.
+
+Local review artifacts (not committed application assets): `/private/tmp/housemates-redesign-desktop-v2.png`, `/private/tmp/housemates-redesign-mobile-v2.png`, `/private/tmp/housemates-redesign-desktop-final.png`, `/private/tmp/housemates-redesign-mobile-final.png`, `/private/tmp/housemates-redesign-home-desktop.png`, `/private/tmp/housemates-redesign-home-mobile.png`. One initial desktop capture had the wrong viewport width; it was corrected and re-reviewed at a verified 1280px before acceptance.
+
+### Current limitations
+
+The world is an original SVG/CSS illustration with simulated activity, not real telemetry or a WebGL physics simulation. The phone is a CSS 3D illustration with scripted sample text. Live AI replies remain explicitly unimplemented until an API is supplied. Free-text preview state is temporary; actual planning preferences and saved plans retain existing browser-local persistence. Reduced-motion behavior was inspected in CSS; no physical-device or external screen-reader certification is claimed. Existing energy-model limitations above still apply.
+
+Local release checkpoint is recorded by the `Redesign Housemates as an interactive pixel household` commit on `codex/housemates-mvp`; no remote push or public deployment.

@@ -53,3 +53,7 @@ Required views may be routes or panels: preserved homepage; group chat; interact
 ## Authorization
 
 Autonomous project edits, ordinary necessary dependencies, subagents, local tests/preview, and local commits are authorized. No remote push, public deployment, purchases, paid calls, external accounts, secrets exposure, unrelated changes, destructive Git, or machine-wide security changes. Respect tool approval controls. Keep progressing through all phases unless an essential blocker requires user intervention.
+
+## Current visual/interaction revision (supersedes chat-board presentation)
+
+Use an original handheld-game-inspired aesthetic with pixel details and low-poly dimensional appliances; no copied Pokémon characters, logos, or assets. The main experience is a selectable interactive household scene. Judge free-text input has an explicit local placeholder reply until a later API integration; never imply that a model is answering. Working deterministic scheduling remains accessible through clearly labeled simulation controls. Show a scripted sample conversation in a dimensional iPhone-style frame. Preserve original homepage information, laboratory, all calculations, preferences, memory and progression. Provide responsive layouts, keyboard controls, reduced motion, honest simulation labels, and actual screenshot-based independent visual review with a repair/review loop.

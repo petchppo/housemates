@@ -63,3 +63,13 @@ P0: correct optimization, feasible negotiation, state updates, approval, accurat
 Every specialist owns the full implement → verify → inspect → repair → reverify loop for its bounded task. Passing code back without running relevant checks is not completion. On failures, capture the exact symptom and root cause, add a meaningful regression where applicable, and report the final command/result. After three unsuccessful repairs, change the hypothesis or consult another specialist; do not repeat speculative fixes.
 
 A different agent reviews cross-module behavior and reports reproducible findings to the owner. The owner repairs and the reviewer verifies the fix. The lead runs integrated checks and the browser acceptance journey before marking a phase complete or creating its checkpoint. PROGRESS.md records findings, fixes, evidence, and remaining limitations. Resume at the next unfinished task after every checkpoint.
+
+## Completed design mission — October 24
+
+User has promoted the visual redesign to required scope: original GBA-inspired pixel chrome plus a low-poly household world, interactive judge scene with explicit API-placeholder responses, and a scripted sample conversation in a dimensional iPhone-style frame. Existing planning, memory, training, preferences and laboratory remain functional.
+
+Ownership: lead owns shell/homepage/integration/docs; conversation specialist owns `household-world.tsx` and its CSS; energy specialist independently reviews actual desktop screenshots; memory specialist independently reviews actual mobile screenshots and accessibility/functional preservation. No dependency or external asset is needed for original SVG/CSS art.
+
+Acceptance loop: implement → render in browser → capture desktop/mobile and interaction states → reviewers view screenshots → prioritized feedback → owner repair → new captures → reviewer recheck → integrated lint/typecheck/tests/build + browser journey → document and commit. Never call a source-only review visual acceptance.
+
+Design revision passed the screenshot repair/review loop, browser interaction checks, lint, TypeScript, 84 tests, and production build. See PROGRESS.md for evidence and remaining API-placeholder scope.

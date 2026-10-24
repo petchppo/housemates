@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PhonePreview } from "@/components/household-world";
 import { ApplianceIcon } from "@/components/appliance-icon";
 import { applianceAgents } from "@/data/appliances";
 import { energyScenario, formatHour, hourlyEnergy } from "@/data/energy";
@@ -19,7 +20,7 @@ export default function Home() {
   const example = estimateUsage(1, cheapest);
 
   return (
-    <div className="mx-auto max-w-6xl px-6 sm:px-10">
+    <div className="hh-home"><div className="mx-auto max-w-6xl px-6 sm:px-10">
       <header className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 py-6">
         <a href="#" className="flex items-center gap-2.5 text-xl font-bold tracking-tight" aria-label="Housemates home"><span className="brand-mark" aria-hidden="true">⌂</span>housemates<span className="text-emerald-700">.</span></a>
         <span className="rounded-full border border-stone-300 px-3 py-1.5 text-xs font-medium text-stone-600">Stanford CleanTech · Prototype</span>
@@ -29,23 +30,17 @@ export default function Home() {
         <section className="grid items-center gap-12 py-16 md:grid-cols-[1.15fr_1fr] md:py-24" aria-labelledby="intro">
           <div>
             <p className="eyebrow mb-5"><span className="mr-2 inline-block h-2 w-2 rounded-full bg-emerald-700"/>A little teamwork. A lighter footprint.</p>
-            <h1 id="intro" className="max-w-xl text-5xl font-semibold leading-[1.08] tracking-[-0.055em] sm:text-6xl">A happier home.<br/><span className="text-emerald-800">A smarter energy plan.</span></h1>
+            <h1 id="intro" className="max-w-xl text-5xl font-semibold leading-[1.08] tracking-[-0.055em] sm:text-6xl">Small appliances.<br/><span className="text-emerald-800">Big main-character energy.</span></h1>
             <p className="mt-6 max-w-md text-base leading-7 text-stone-600">Meet the appliances with a plan. Housemates is an AI-powered household energy-planning concept where your EV, dishwasher, and AC work together around your day.</p>
             <a href="#housemates" className="mt-8 inline-flex items-center gap-6 rounded-full bg-emerald-900 px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-emerald-800">Meet your housemates <span aria-hidden="true">↗</span></a>
             <Link href="/household" className="ml-0 mt-4 inline-flex rounded-full border border-emerald-800 px-6 py-3 text-sm font-semibold text-emerald-900 sm:ml-3">Enter Appliance Parliament ↗</Link>
             <p className="mt-4 text-xs text-stone-500">Your comfort and deadlines come first.</p>
           </div>
 
-          <div className="rounded-[2rem] border border-stone-200 bg-[#eeeedd] p-5 sm:p-8">
-            <div className="mb-5 flex flex-wrap items-center justify-between gap-2"><span className="eyebrow">The household group chat</span><span className="rounded-full bg-white/70 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-stone-600">Scripted preview</span></div>
-            <div className="space-y-4">
-              {applianceAgents.map((agent) => <div key={agent.id} className="flex items-start gap-3"><div className={`avatar ${agent.id}`}><ApplianceIcon id={agent.id} className="h-7 w-7"/></div><div className="rounded-2xl rounded-tl-sm bg-white/90 p-3.5 shadow-sm"><p className="mb-1 text-xs font-semibold">{agent.name}</p><p className="text-sm leading-6 text-stone-600">{agent.introduction}</p></div></div>)}
-            </div>
-            <div className="mt-6 flex items-center gap-2 border-t border-stone-300/70 pt-4 text-xs text-stone-600"><span aria-hidden="true">✳</span> Fictional appliances. Real planning potential.</div>
-          </div>
+          <div className="hh-home-phone"><p className="eyebrow">Tiny appliances. Big personalities.</p><PhonePreview/></div>
         </section>
 
-        <aside className="flex items-start gap-3 rounded-xl border border-[#d9dfc7] bg-[#eff2e8] p-4 text-sm leading-6 text-stone-600"><span className="mt-0.5 text-emerald-800" aria-hidden="true">ⓘ</span><p><strong className="font-semibold text-stone-800">A transparent demo.</strong> Appliance states and messages are simulated. Prices and carbon data are synthetic. No devices are connected. Negotiate and save a plan in <Link href="/household" className="font-semibold text-emerald-900 underline underline-offset-2">Appliance Parliament</Link>, or inspect calculations in <a href="/energy-parliament" className="font-semibold text-emerald-900 underline underline-offset-2">Energy Parliament</a>. Dialogue is deterministic and calculations are functional.</p></aside>
+        <aside className="flex items-start gap-3 rounded-xl border border-[#d9dfc7] bg-[#eff2e8] p-4 text-sm leading-6 text-stone-600"><span className="mt-0.5 text-emerald-800" aria-hidden="true">ⓘ</span><p><strong className="font-semibold text-stone-800">A transparent demo.</strong> Appliance states and messages are simulated. Prices and carbon data are synthetic. No devices are connected. Negotiate and save a plan in <Link href="/household" className="font-semibold text-emerald-900 underline underline-offset-2">Appliance Parliament</Link>, or inspect calculations in <a href="/energy-parliament" className="font-semibold text-emerald-900 underline underline-offset-2">Energy Parliament</a>. The playable scene has API-placeholder replies; simulation controls run functional calculations.</p></aside>
 
         <section id="housemates" className="scroll-mt-8 py-16" aria-labelledby="agents-heading">
           <div className="mb-7 flex flex-wrap items-end justify-between gap-3"><div><p className="eyebrow mb-3">Small personalities. Shared purpose.</p><h2 id="agents-heading" className="text-3xl font-semibold tracking-tight">Meet the home team.</h2></div><p className="text-sm text-stone-500">Three agents. One household.</p></div>
@@ -62,6 +57,6 @@ export default function Home() {
         </section>
       </main>
       <footer className="flex flex-wrap justify-between gap-3 border-t border-stone-200 py-6 text-xs text-stone-500"><span>Housemates · Built for Stanford CleanTech</span><span>A more thoughtful home starts with a conversation.</span></footer>
-    </div>
+    </div></div>
   );
 }

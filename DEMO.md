@@ -1,54 +1,47 @@
-# Housemates — verified 90-second demo
+# Housemates — interactive design demo
 
-The complete demo runs at **http://localhost:3000/household**. Start from **http://localhost:3000** to introduce the characters. The isolated scheduling laboratory remains at **http://localhost:3000/energy-parliament**.
+Open **http://localhost:3000/household**. The introduction remains at **http://localhost:3000** and the scheduling laboratory at **http://localhost:3000/energy-parliament**.
 
-## Start or resume
+## Run locally
 
-If the existing localhost:3000 development server is working, keep it running. Otherwise:
+Keep a healthy localhost:3000 server running. Otherwise:
 
 ```sh
 npm install
 npm run dev -- --hostname 0.0.0.0
 ```
 
-No API key, paid service, hardware, or account is needed. For a phone on the same Wi-Fi, use `http://<laptop-LAN-IP>:3000/household`. The phone has its own local memory; there is no synchronization. A guest network may block laptop-to-phone connections.
+No API key, account, paid service, or connected hardware is needed. A phone on the same Wi-Fi can use `http://<laptop-LAN-IP>:3000/household`; guest networks may block this. Each browser has its own memory.
 
-## Before presenting
-
-Open Appliance Parliament and select **Reset Demo → Reset household**. It resets only this app’s local conversation, preferences, saved plans, and training. Check the “Memory saved on this browser” status. If storage is blocked, the app still works but explicitly warns that changes may not survive refresh.
-
-## The 90-second script
+## The 90-second presentation
 
 | Time | Action | Explain |
 | --- | --- | --- |
-| 0–10s | Open the homepage; point out Evie, Bubbles, and Chill. Click **Enter Appliance Parliament ↗**. | “This is a simulated home, with synthetic rates. The scheduling math and interactions are functional.” |
-| 10–25s | Click **Plan my morning**, or send: “I need my EV charged by 7 AM and my dishes finished before breakfast. Minimize my energy costs.” | The optimizer searches feasible hours. Each character explains its actual computed session. Breakfast defaults explicitly to Day 2 at 7am. |
-| 25–40s | Click **Inspect calculations**. Switch **View day** to Day 2, open **Hourly calculation details**, and inspect original/proposed costs and carbon. | Every occupied hour contributes energy × rate; midnight and partial charging hours are handled. Carbon is a modeled estimate, not measured avoidance. |
-| 40–55s | Return to **Parliament**. Send: “I don't want the dishwasher running after 10 PM.” Or click **Quiet after 10pm**. | Bubbles now must finish by Day 1 at 10pm. The system recalculates instead of playing a fixed transcript. The constraint does not shift the baseline. |
-| 55–65s | Inspect the revised proposal and click **Approve & save**. | A validated input snapshot is saved; no appliance command is sent. Show the training update. |
-| 65–80s | Open **Meet & train**. Evie and Bubbles have reached level 2. Refresh the page. | The saved plan, conversation, XP, and Bubbles’ 10pm cutoff remain. No fake new reward appears merely from refreshing. |
-| 80–90s | Open **Meet & train** and click Bubbles’ **Use remembered routine ↗**. | The shortcut creates a new feasible proposal using the remembered cutoff. Point out Reset Demo for replay. |
+| 0–15s | Open the household. Select Evie, Bubbles, and Chill in the miniature scene; toggle Day/Dusk. | “These are original simulated characters. The visual world responds to interaction; no device is connected.” |
+| 15–30s | Type a request into “What would you tell your housemates?” and press Enter or the preview arrow. | “The AI API is not connected yet. This is explicitly a placeholder reply, and typing here does not change constraints.” |
+| 30–40s | Point to the dimensional phone. Use **View straight on** to read the sample. | “This conversation is a scripted preview of the future experience.” |
+| 40–55s | Select **Plan the morning**, then **Set a quiet evening** under **Local simulation**. | These buttons run the real deterministic optimizer. The second action sets Bubbles’ completion cutoff to Day 1 at 10pm. The browser focuses and scrolls to the calculated proposal. |
+| 55–70s | Select **Inspect calculations** or **The plan**; compare original/proposed sessions and switch the timeline to Day 2. | Energy × each occupied hour’s synthetic rate determines costs/carbon. The baseline stays fixed. Read the actual numbers; do not promise fixed results. |
+| 70–80s | Return to **Parliament**, then **Approve & save**. | A feasible input snapshot is saved locally. No hardware command is sent. |
+| 80–90s | Refresh. Show saved cutoff/plan, then **Meet & train**. | Preferences and training persist. The level 2 remembered-routine shortcut creates a new validated proposal. |
 
-Do not promise fixed dollar results: read the calculated numbers currently shown. Editing power, energy, profiles, windows, or objectives changes the result. Positive savings/reduction means improvement; negative means an increase. Infeasible plans cannot be approved.
+Simulation controls are separate from the API-placeholder composer. Their computed reasoning remains inspectable under **Planning history & calculation notes**. The phone sample contains no savings claims.
 
-## Optional tradeoff extension
+## Reset and repeat
 
-In **Preferences**, set Evie charging power to 3 kW, latest start to Day 2 noon, and completion deadline to Day 2 at 4pm. Apply settings. Open **The plan** and compare the cost-first and carbon-first alternatives. They use the same energy with different costs and modeled emissions. Select an objective to create a new proposal. Leave Bubbles’ quiet-hours cutoff intact.
+**Reset Demo → Reset household** clears only this app’s preferences, saved plans, stored planning history, training, and current scene preview. Escape or **Keep my household** cancels. Storage failures are reported honestly. Check **Memory saved on this browser** before promising refresh persistence.
 
-A nonuniform dishwasher profile can be demonstrated by entering `0.9, 0.3` with a two-hour cycle and 1.2 kWh total. Invalid totals produce validation feedback. Explain that this models hourly averages, not instantaneous device readings.
+## Extra functional checks
 
-## Recovery and boundaries
+- **Preferences** edits EV energy/power/window/deadline, dishwasher cycle/consumption profile/window/deadline, objective, and optional shared power cap.
+- A dishwasher deadline of Day 1 at 9pm conflicts with its default 8pm earliest start and two-hour cycle. The proposal explains infeasibility and cannot be approved. Restore 10pm.
+- For cost/carbon tradeoffs, set Evie power to 3 kW, latest start to Day 2 noon, deadline Day 2 at 4pm. Compare the three independently calculated objectives in **The plan**.
+- A dishwasher profile `0.9, 0.3` models two hourly phases totaling 1.2 kWh. Incorrect totals trigger validation feedback.
+- Rejection withdraws approval. **Recalculate using current preferences** creates a fresh proposal while honoring remembered constraints.
+- Selecting characters, changing the illustration’s lighting, rotating the phone, or typing in the placeholder composer never changes a saved energy plan.
 
-- Unknown language asks for clarification; use explicit AM/PM, whole hours, and Day 1/Day 2 for clarity. Use Preferences for energy, power, cycle, and shared limits.
-- **Reject** withdraws approval availability. **Revise** searches again using current constraints.
-- An impossible deadline produces a clear explanation and no fabricated savings. Return to the known-good cutoff or Reset Demo.
-- **Reset Demo** uses a named native dialog: Escape cancels; confirmation clears the app’s stored state. Failed storage clearing is reported honestly.
-- Chill’s comfort is protected by exclusion from optimization. No thermal model, actual room telemetry, device integration, or AC savings are claimed.
-- The deterministic conversation is not an LLM. No messages leave the browser for a model/API. Local storage is per browser and can be cleared.
-- The energy horizon is 48 fictional hours with repeated synthetic rates, not a live next-day forecast or a full electricity bill.
+## Honest boundaries
 
-## Verification evidence
+Synthetic prices and carbon intensity repeat over 48 fictional hours. Carbon is a modeled average-intensity estimate, not measured or necessarily avoided marginal emissions. Taxes, fixed charges, charging losses, other loads, and AC savings are excluded. Chill has no thermal model and is not optimized. No external model/network request is made for the preview reply. The underlying deterministic intent API remains available for future agent integration.
 
-Lead browser run: homepage navigation; exact two-message negotiation; interval table; approval/save; level 2 unlock; refresh persistence; remembered shortcut; rejection/revision; impossible deadline; variable charging power and dishwasher profile; objective tradeoff; 390px mobile layouts; keyboard Enter sending; reset dialog focus and Escape; confirmed reset and refresh; repeatable demo. No runtime errors observed. A Next.js smooth-scroll configuration warning found during testing was repaired using bundled Next.js 16 guidance.
-
-Automated evidence and exact Git checkpoints are recorded in PROGRESS.md.
+PROGRESS.md records actual automated checks and desktop/mobile visual-review evidence. Browser-sized mobile testing is not a claim of testing physical smart-home hardware.

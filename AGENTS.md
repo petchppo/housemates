@@ -41,3 +41,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## Required self-correcting swarm loop
 
 For every owned milestone: implement → run relevant checks → inspect exact failures → targeted repair with regression coverage → rerun → independent review → integrate → update PROGRESS → verified local commit → continue. Each specialist reports evidence, not just completion claims. Reviewers return concrete reproductions; owners repair and reviewers verify. After three failed repairs of one issue, change root-cause hypothesis, consult a peer, or simplify. The lead must run combined checks and the actual demo before final acceptance.
+
+## Visual design review loop
+
+Latest design scope: original handheld-game pixel chrome, low-poly household characters, interactive judge scene with explicit API-placeholder replies, and a scripted conversation in a dimensional phone. Keep scheduling calculations and existing functional panels. Do not connect an API until configured; never replace placeholders with invented model output.
+
+For visual changes, capture the rendered site at desktop and phone widths. At least one independent visual reviewer must actually view those screenshots; source review alone is insufficient. Report concrete layout, interaction, contrast, and mobile defects, return them to the owning implementer, then capture/review the repairs. Check keyboard and reduced-motion behavior plus simulation/placeholder labels. Record what was actually reviewed in PROGRESS.md.
