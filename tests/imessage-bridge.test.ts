@@ -276,11 +276,11 @@ test("plain follow-ups retain the last explicit persona and unsupported prefixes
   const send: typeof sendBlueBubblesText = async (_config, chat, text, id) => { assert.equal(chat, `iMessage;-;${sender}`); sent.push({ text, id }); };
   const reply = "Happy to help you think it through.";
   assert.equal((await bridge.reply(pair.token, "follow-up", reply, config, send, "openai")).status, 200);
-  assert.equal(sent[0].text, `[Bubbles · AI dialogue · simulation]\n${reply}\nReview and approve any proposal in your open Housemates browser.`);
+  assert.equal(sent[0].text, `${reply}\n\n— Bubbles`);
   assert.equal(sent[0].id, "incoming-follow-up");
   assert.equal((await bridge.reply(pair.token, "first", reply, config, send, "invented-source")).status, 400);
   assert.equal((await bridge.reply(pair.token, "first", reply, config, send)).status, 200);
-  assert.match(sent[1].text, /^\[Evie · local planner · simulation\]/);
+  assert.equal(sent[1].text, `${reply}\n\n— Evie · local reply (simulation)`);
 });
 
 test("polled requests carry fixed per-message expiry even when the browser processes a batch slowly", async () => {
@@ -329,7 +329,7 @@ test("web turns mirror exact text once to the proven chat with isolated delivery
   assert.equal((await bridge.publish(pair.token, { ...turn, text: "Changed duplicate" }, config, send)).body.duplicate, true);
   assert.equal(sends.length, 1);
   assert.equal(sends[0].chat, `iMessage;-;${sender}`);
-  assert.equal(sends[0].text, `[You · website]\n${turn.userText}\n\n[Evie · AI dialogue · simulation]\n${turn.text}\nReview and approve any proposal in your open Housemates browser.`);
+  assert.equal(sends[0].text, `You (website): ${turn.userText}\n\nEvie: ${turn.text}`);
   assert.match(sends[0].id, /^web-[a-f0-9]{24}-web-turn-1$/);
   assert.ok(!sends[0].id.includes(pair.token));
   assert.deepEqual(bridge.poll(pair.token).body.messages, [], "mirroring must not enqueue an echo or invoke the planner");
@@ -393,4 +393,30 @@ test("concurrent or uncertain web sends never retry, and each pairing has a deli
   for (let i = 2; i <= 128; i++) assert.equal((await bridge.publish(pair.token, { ...turn, id: `web-${i}` }, config, counted)).status, 200);
   assert.equal((await bridge.publish(pair.token, { ...turn, id: "web-129" }, config, counted)).status, 429);
   assert.equal(sends, 128);
+});
+
+test("normal colon messages and explicit greetings route once without requiring repeated character prefixes", () => {
+  const { bridge, pair } = setup();
+  const turns = [
+    ["question", "Question: can we compare options?"],
+    ["greet", "hi Bubbles how are you?"],
+    ["casual", "lol"],
+    ["mention", "Evie is funny, right?"],
+    ["unsupported", "hey Frost, can you help?"],
+    ["kept", "Tomorrow: what about the plan?"],
+    ["comma", "Chill, what do you think?"],
+    ["approve", "approve"],
+  ];
+  for (const [id, text] of turns) bridge.receive(event(text, id), config);
+  const messages = bridge.poll(pair.token).body.messages as { id: string; applianceId: string; text: string }[];
+  assert.deepEqual(messages.map(({ id, applianceId, text }) => ({ id, applianceId, text })), [
+    { id: "question", applianceId: "evie", text: "Question: can we compare options?" },
+    { id: "greet", applianceId: "bubbles", text: "how are you?" },
+    { id: "casual", applianceId: "bubbles", text: "lol" },
+    { id: "mention", applianceId: "bubbles", text: "Evie is funny, right?" },
+    { id: "kept", applianceId: "bubbles", text: "Tomorrow: what about the plan?" },
+    { id: "comma", applianceId: "chill", text: "what do you think?" },
+    { id: "approve", applianceId: "chill", text: "approve" },
+  ]);
+  assert.equal(bridge.receive(event("hi Bubbles how are you?", "greet"), config).body.duplicate, true);
 });

@@ -44,15 +44,17 @@ The repository does not need an additional MCP to make these HTTP calls. The mis
 3. Keep the household tab open and visible. Send commands such as:
 
 ```text
-Evie: Find a cheaper plan
-Bubbles: Don’t run the dishwasher after 10 PM
+hi
+lmao
+Find a cheaper plan
+Hey Bubbles, don’t run the dishwasher after 10 PM
 Chill: Status
 ```
 
 4. The browser imports each request into its existing conversation, computes a validated projection and sends that exact reply back. Requests for an unrecruited appliance get a clear explanation. **Review and approve the proposal in the web demo**. A text saying `approve` does not start execution.
 5. Ask `Evie: Status` for the current approved simulated progress. Completion and estimates remain synthetic; no household device receives a command. Background push notifications and automatic completion messages to iMessage are not implemented.
 
-Plain messages use Evie on a new pairing or restored session, then the last explicitly addressed teammate or successfully mirrored web teammate. Use `Evie:`, `Bubbles:` or `Chill:` to switch. Unknown named prefixes are ignored with a private diagnostic; they are never silently routed to Evie. Photo attachments, SMS, groups, self-sent messages, other senders, non-message events and old/future-dated events are ignored. Apple and the bridge process these texts; do not describe external messaging as on-device-only.
+No character name or command prefix is required. Plain messages use Evie on a new pairing or restored session, then the last explicitly addressed teammate or successfully mirrored web teammate. To switch, optionally use a greeting such as `Hey Bubbles, how are you?`, a name with a comma, or the older `Evie:` / `Bubbles:` / `Chill:` format. Ordinary colon sentences such as `Question: why?` pass through unchanged. An explicit address to an unsupported catalog teammate is ignored with a private diagnostic rather than silently retargeted. Casual mentions elsewhere do not switch the conversation. Photo attachments, SMS, groups, self-sent messages, other senders, non-message events and old/future-dated events are ignored. Apple and the bridge process these texts; do not describe external messaging as on-device-only.
 
 ## Transport and security contract
 
@@ -78,7 +80,7 @@ Browser bridge actions have a 20-second deadline covering response headers and b
 
 `MessagesConnection` awaits `onCommand(id,text,{signal,messageId})` for the exact website reply and its `openai`/`local` source. The shared controller bounds each model call, while transport allows queued work up to the verified message/session expiry; cancellation suppresses stale delivery, consumes the request once, and never invokes a second model. The callback must honor its signal and use the web controller’s own serialized context. Phone-origin turns are excluded from outbound mirroring to prevent echoes.
 
-Completed new web turns can be supplied via `outboundTurns`; turns already present before phone proof are not replayed. Publishing sends one labeled transcript containing the website user text and exact response to the fixed paired chat. Persona/source headers make AI and local fallback distinguishable; these do not change the sender’s Apple identity or recipient contact name. Successful web publishing changes the default phone follow-up target unless a newer explicitly targeted phone event arrived meanwhile.
+Completed new web turns can be supplied via `outboundTurns`; turns already present before phone proof are not replayed. Publishing sends one labeled transcript containing the website user text and exact response to the fixed paired chat. Phone replies contain the exact conversation body and a compact character signature. Local fallback is explicitly labeled; AI use is disclosed when pairing and in the web conversation. Website mirrors retain the user text and character reply without repeated technical banners or approval footers. These do not change the sender’s Apple identity or recipient contact name. Successful web publishing changes the default phone follow-up target unless a newer explicitly targeted phone event arrived meanwhile.
 
 Publish requires the same origin and paired bearer capability, bounded safe IDs/text, explicit source, and no supplied recipient or extra fields. Combined reply/publish attempts are capped at 128 per pairing. Duplicate, concurrent and uncertain sends never trigger automatic resends. Short sessions, queues and conversation history remain temporary. Remembered phone authorization persists locally until disconnected, invalidated by configuration changes, or its renewable cookie lifetime ends. Both the foreground web app and configured Mac bridge must remain available; this is not a background standalone bot.
 
@@ -92,3 +94,5 @@ The local single-process server keeps only remembered binding metadata in ignore
 Weather refreshes, synthetic weather experiments and planning-mode changes do not invalidate the remembered household. Different reviewed household settings remain isolated. Only one tab owns the current phone conversation: resuming in a newer tab replaces the old temporary capability, which receives a 409 and cannot automatically reclaim it. Replacement bookkeeping is bounded and fails closed at capacity. Re-pairing with phone proof revokes the previous remembered binding for that sender.
 
 Remembered does not mean always-running: the Mac, BlueBubbles and Housemates must be running, and the household browser must remain open and visible for AI/planner replies. Closed/offline pages do not generate responses. Reopen the home, let it restore the phone, and send a fresh request; transcripts and old commands are not replayed after refresh/restart. Chat cannot approve a plan.
+
+For short greetings, laughter and thanks, the model is prompted to respond conversationally rather than redirect to planning. If it fails validation or is unavailable, a narrowly matched, authored local character reply replaces the command-help wall. Mixed scheduling/approval requests retain the exact validated planner fallback. The model response guard and explicit browser approval are unchanged.

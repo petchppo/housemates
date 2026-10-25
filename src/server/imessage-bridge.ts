@@ -1,5 +1,6 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import type { ApplianceId } from "../domain/appliances";
+import { formatPhoneReply, formatWebsiteTurn, routeMessageText } from "../domain/message-text";
 import { isSameOrigin } from "./request-origin";
 import { householdContextHash, MemoryPairingStore, pairingHash, REMEMBER_MS, type PairingStore } from "./imessage-pairing-store";
 
@@ -15,7 +16,6 @@ const names: Record<ApplianceId, string> = { evie: "Evie", bubbles: "Bubbles", c
 const validId = (value: unknown): value is string => typeof value === "string" && /^[\w-]{1,128}$/.test(value);
 const validText = (value: unknown, max: number): value is string => typeof value === "string" && !!value.trim() && value.length <= max && !/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(value);
 const validSource = (value: unknown): value is "openai" | "local" => value === "openai" || value === "local";
-const replyHeader = (appliance: ApplianceId, source: "openai" | "local") => `[${names[appliance]} · ${source === "openai" ? "AI dialogue" : "local planner"} · simulation]`;
 const result = (status: number, body: Record<string, unknown>): BridgeResult => ({ status, body });
 const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === "object" && !Array.isArray(value);
 class PairingCapacityFailure extends Error {}
@@ -204,16 +204,14 @@ export class IMessageBridge {
     const session = [...this.sessions.values()].find(item => item.chatGuid === event.chatGuid);
     if (!session) return finish("unpaired-chat", result(200, { ignored: true }));
     if (session.notBefore !== null && event.createdAt <= session.notBefore) return finish("timestamp", result(200, { ignored: true }));
-    const command = /^(evie|bubbles|chill)\s*:\s*([\s\S]+)$/i.exec(event.text);
-    if (!command && /^[a-z][\w -]{0,30}\s*:/i.test(event.text)) {
+    const routed = routeMessageText(event.text, session.activeAppliance);
+    if (routed.kind === "ignore") {
       session.diagnostics.lastInboundAt = this.now();
       session.diagnostics.lastInboundOutcome = "unsupported-command";
       return finish("unsupported-command", result(200, { ignored: true }));
     }
     if (session.queue.length >= 20) return finish("queue-full", result(429, { error: "The paired browser has too many waiting requests." }));
-    const applianceId = command ? command[1].toLowerCase() as ApplianceId : session.activeAppliance;
-    const text = command ? command[2].trim() : event.text;
-    if (!text) return finish("text-or-attachment", result(200, { ignored: true }));
+    const { applianceId, text } = routed;
     session.activeAppliance = applianceId;
     session.routingRevision++;
     session.queue.push({ id: event.id, applianceId, text, receivedAt: this.now() });
@@ -244,7 +242,7 @@ export class IMessageBridge {
     if (session.attempted.size >= MAX_ATTEMPTS) return result(429, { error: "This pairing reached its delivery limit. Pair again." });
     session.sending.add(id); session.attempted.add(id);
     try {
-      await send(config, session.chatGuid, `${replyHeader(incoming.applianceId, source)}\n${text}\nReview and approve any proposal in your open Housemates browser.`, `incoming-${id}`);
+      await send(config, session.chatGuid, formatPhoneReply(incoming.applianceId, source, text), `incoming-${id}`);
       session.delivered.add(id); session.queue = session.queue.filter(item => item.id !== id);
       session.diagnostics.lastReplyAt = this.now();
       session.diagnostics.lastReplyOutcome = "accepted";
@@ -274,7 +272,7 @@ export class IMessageBridge {
     session.sending.add(id); session.attempted.add(id);
     const routingRevision = ++session.routingRevision;
     try {
-      await send(config, session.chatGuid, `[You · website]\n${value.userText}\n\n${replyHeader(applianceId, value.source)}\n${value.text}\nReview and approve any proposal in your open Housemates browser.`, `web-${session.deliveryId}-${value.id}`);
+      await send(config, session.chatGuid, formatWebsiteTurn(applianceId, value.source, value.userText, value.text), `web-${session.deliveryId}-${value.id}`);
       session.delivered.add(id);
       // A later explicit phone target must not be overwritten by a slower web delivery.
       if (session.routingRevision === routingRevision) session.activeAppliance = applianceId;

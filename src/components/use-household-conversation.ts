@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ApplianceId } from "@/domain/appliances";
 import { parseCharacterReply, type CharacterDialogueTurn } from "@/domain/character-dialogue";
+import { casualFallback } from "@/domain/casual-dialogue";
 import type { MessageConversationReply, MessageSyncTurn } from "@/domain/message-conversation";
 
 export type SharedConversationView = {
@@ -23,22 +24,22 @@ type Job = {
 };
 const fresh = (): CharacterView => ({ reply: null, source: null, loading: false, notice: "", history: [] });
 const freshViews = (): Record<ApplianceId, CharacterView> => ({ evie: fresh(), bubbles: fresh(), chill: fresh() });
-const fallback = "AI dialogue is unavailable. Showing the local planner reply.";
+const fallback = "AI dialogue is unavailable. Showing a local reply.";
 const failures: Record<string, string> = {
-  "provider-credit-balance": "AI dialogue needs available API credits. Showing the local planner reply.",
-  "provider-spend-limit": "The API spending limit was reached. Showing the local planner reply.",
-  "provider-usage-limit": "The API usage limit was reached. Showing the local planner reply.",
-  "provider-quota": "The API quota is unavailable. Showing the local planner reply.",
-  "provider-rate-limit": "AI dialogue is temporarily rate limited. Showing the local planner reply.",
-  "provider-limit-unknown": "The API returned a limit error. Showing the local planner reply.",
-  "provider-authentication": "The API key was rejected. Showing the local planner reply.",
-  "provider-access-denied": "The API denied access. Showing the local planner reply.",
-  "provider-request-rejected": "The API rejected the request settings. Showing the local planner reply.",
-  "provider-token-limit": "The AI reply did not finish within its output limit. Showing the local planner reply.",
-  "provider-refused": "The AI declined this request. Showing the local planner reply.",
-  "provider-timeout": "AI dialogue timed out. Showing the local planner reply.",
-  "unsafe-character-reply": "The AI reply failed our fact and action checks. Showing the local planner reply.",
-  "invalid-provider-response": "The AI reply could not be validated. Showing the local planner reply.",
+  "provider-credit-balance": "AI dialogue needs available API credits. Showing a local reply.",
+  "provider-spend-limit": "The API spending limit was reached. Showing a local reply.",
+  "provider-usage-limit": "The API usage limit was reached. Showing a local reply.",
+  "provider-quota": "The API quota is unavailable. Showing a local reply.",
+  "provider-rate-limit": "AI dialogue is temporarily rate limited. Showing a local reply.",
+  "provider-limit-unknown": "The API returned a limit error. Showing a local reply.",
+  "provider-authentication": "The API key was rejected. Showing a local reply.",
+  "provider-access-denied": "The API denied access. Showing a local reply.",
+  "provider-request-rejected": "The API rejected the request settings. Showing a local reply.",
+  "provider-token-limit": "The AI reply did not finish within its output limit. Showing a local reply.",
+  "provider-refused": "The AI declined this request. Showing a local reply.",
+  "provider-timeout": "AI dialogue timed out. Showing a local reply.",
+  "unsafe-character-reply": "The AI reply failed our fact and action checks. Showing a local reply.",
+  "invalid-provider-response": "The AI reply could not be validated. Showing a local reply.",
 };
 const safeText = (value: unknown, limit: number): value is string => typeof value === "string" && !!value.trim() && value.length <= limit && !/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(value);
 const isCharacter = (id: unknown): id is ApplianceId => id === "evie" || id === "bubbles" || id === "chill";
@@ -126,7 +127,7 @@ export function useHouseholdConversation(contextKey: string, onPlannerSend: Plan
         if (!valid()) { settle(job); continue; }
         const usable = safeText(local, 5000);
         const localText = safeText(local, 5000) ? local : "Review the household planner in the web app for this request. A shareable planner reply is unavailable.";
-        let reply: MessageConversationReply = { text: localText, source: "local", notice: state.status === "checking" ? "AI connection is being checked. Showing the local planner reply." : fallback };
+        let reply: MessageConversationReply = { text: casualFallback(job.character, job.text) ?? localText, source: "local", notice: state.status === "checking" ? "AI connection is being checked. Showing a local reply." : fallback };
         state.views[job.character] = { ...previous, reply: null, source: null, loading: true, notice: "", history: [...previous.history, { role: "user" as const, text: job.text, origin: job.origin }].slice(-30) };
         publish();
         if (usable && state.status === "configured") {

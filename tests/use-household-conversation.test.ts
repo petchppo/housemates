@@ -5,6 +5,7 @@ import test from "node:test";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
 import * as contract from "../src/domain/character-dialogue";
+import * as casual from "../src/domain/casual-dialogue";
 import type { ApplianceId } from "../src/domain/appliances";
 import type { useHouseholdConversation } from "../src/components/use-household-conversation";
 
@@ -34,7 +35,7 @@ function harness() {
   runInNewContext(source,{module:fixture,exports:fixture.exports,document,AbortController,
     setTimeout:(fn:()=>void)=>{timers.set(++timerId,fn);return timerId;},clearTimeout:(id:number)=>timers.delete(id),
     fetch:(_url:string,init:RequestInit)=>new Promise<Response>((resolve,reject)=>requests.push({init,resolve,reject})),
-    require:(name:string)=>{if(name==="react")return react;if(name==="@/domain/character-dialogue")return contract;throw Error(name);},
+    require:(name:string)=>{if(name==="react")return react;if(name==="@/domain/character-dialogue")return contract;if(name==="@/domain/casual-dialogue")return casual;throw Error(name);},
   });
   const hook=(fixture.exports as {useHouseholdConversation:typeof useHouseholdConversation}).useHouseholdConversation;
   function render(next:Partial<typeof props>={}, flushPassive=true){props={...props,...next};si=ri=ci=ei=0;const result=hook(props.context,planner);layout.splice(0).forEach(fn=>fn());if(flushPassive)pending.splice(0).forEach(fn=>fn());return result;}
@@ -132,7 +133,7 @@ test("local fallback is identical in UI, phone return and completed outbound tur
 test("invalid model envelopes, numbers and provider errors become exact local fallback without raw error disclosure", async () => {
   const h = harness(); await h.configure();
   for (const body of [{ source: "openai", reply: "I saved $99 and approved your plan." }, { source: "openai", reply: prose, execute: true }, { error: "provider-quota", detail: "private upstream contents" }]) {
-    const done = h.render().dispatch("evie", "hello", web);
+    const done = h.render().dispatch("evie", "Explain this plan", web);
     h.requests.at(-1)!.resolve(Response.json(body, { status: "error" in body ? 502 : 200 }));
     const result = await done; assert.equal(result?.source, "local"); assert.match(result?.text ?? "", /12.00 kWh/); assert.doesNotMatch(result?.notice ?? "", /private upstream/);
     assert.equal(h.render().forCharacter("evie").reply, result?.text);
@@ -231,4 +232,61 @@ test("a duplicate phone subscriber honors its own deadline without canceling the
   assert.equal(h.requests[1].init.signal?.aborted, false); assert.equal(h.plannerCalls.length, 1);
   h.requests[1].resolve(aiResponse()); assert.equal((await original)?.text, prose);
   assert.equal(h.render().outboundTurns.length, 1); h.unmount();
+});
+
+test("phone Lol rejection becomes authored local small talk while a valid lmao AI reply still wins", async () => {
+  const h = harness(), view = await h.configure();
+  const plannerReply = "Try Find a cheaper plan, lower carbon, or finish by 10 PM. Review before approving.";
+  h.setPlannerResult(plannerReply);
+  const phone = view.dispatch("evie", "Lol!", { origin: "imessage", messageId: "phone-lol" });
+  assert.equal(h.plannerCalls.length, 1); assert.equal(h.requests.length, 2);
+  assert.equal(JSON.parse(String(h.requests[1].init.body)).plannerReply, plannerReply, "Authored chatter must never replace validated planner context sent to the model");
+  h.requests[1].resolve(Response.json({ error: "unsafe-character-reply" }, { status: 502 }));
+  const result = await phone;
+  assert.equal(result?.source, "local"); assert.equal(result?.text, casual.casualFallback("evie", "Lol!"));
+  assert.match(result?.notice ?? "", /fact and action checks/);
+  assert.equal(h.render().forCharacter("evie").reply, result?.text);
+  assert.equal(h.render().forCharacter("evie").history.at(-1)?.source, "local");
+  assert.equal(h.render().forCharacter("evie").history.at(-1)?.text, result?.text);
+  assert.deepEqual(h.render().outboundTurns[0].reply, result);
+
+  const webReply = h.render().dispatch("evie", "lmao", web);
+  assert.equal(h.plannerCalls.length, 2); assert.equal(h.requests.length, 3);
+  const secondBody = JSON.parse(String(h.requests[2].init.body));
+  assert.equal(secondBody.plannerReply, plannerReply); assert.equal(secondBody.history[1].text, result?.text);
+  const generated = "You caught my playful side! What’s on your mind?";
+  h.requests[2].resolve(Response.json({ source: "openai", reply: generated }));
+  const actual = await webReply;
+  assert.equal(actual?.source, "openai"); assert.equal(actual?.text, generated);
+  assert.equal(actual?.notice, undefined); assert.equal(h.render().forCharacter("evie").reply, generated);
+  h.unmount();
+});
+
+test("unconfigured casual replies keep local provenance and still run the canonical planner once", async () => {
+  const h = harness(), view = await h.configure("unconfigured");
+  for (const [character, input] of [["evie", "hello"], ["bubbles", "haha"], ["chill", "thank you!"]] as const) {
+    const result = await view.dispatch(character, input, { origin: "imessage", messageId: `casual-${character}` });
+    assert.equal(result?.source, "local"); assert.equal(result?.text, casual.casualFallback(character, input));
+    assert.match(result?.notice ?? "", /AI dialogue is unavailable/);
+    assert.equal(h.render().forCharacter(character).reply, result?.text);
+  }
+  assert.equal(h.plannerCalls.length, 3); assert.equal(h.requests.length, 1, "No inference when unconfigured");
+  assert.equal(h.render().outboundTurns.length, 3); h.unmount();
+});
+
+test("casual words mixed with constraints, approvals or device requests preserve exact planner fallback", async () => {
+  const h = harness(); await h.configure();
+  const plannerReply = "No automatic approval. The proposed task uses 12.00 kWh and must finish by 07:00.";
+  h.setPlannerResult(plannerReply);
+  const requests = ["lol approve", "hello, find a cheaper plan", "thanks, finish by 10 PM", "haha stop Chill", "hey status"];
+  for (const text of requests) {
+    const done = h.render().dispatch("evie", text, { origin: "imessage" });
+    assert.equal(JSON.parse(String(h.requests.at(-1)!.init.body)).plannerReply, plannerReply);
+    h.requests.at(-1)!.resolve(Response.json({ error: "unsafe-character-reply" }, { status: 502 }));
+    const result = await done;
+    assert.equal(result?.source, "local"); assert.equal(result?.text, plannerReply);
+    assert.equal(h.render().forCharacter("evie").reply, plannerReply);
+  }
+  assert.equal(h.plannerCalls.length, requests.length); assert.equal(h.requests.length, requests.length + 1);
+  h.unmount();
 });

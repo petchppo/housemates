@@ -5,6 +5,7 @@ import test from "node:test";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
 import * as characterContract from "../src/domain/character-dialogue";
+import * as casualDialogue from "../src/domain/casual-dialogue";
 import type { ApplianceId } from "../src/domain/appliances";
 import { buildDemoScenario, DEFAULT_DEMO_PROFILE } from "../src/domain/demo";
 import { createDemoCommandSession, requestDemoCommand } from "../src/domain/demo-commands";
@@ -47,7 +48,7 @@ function household() {
     fetch: (_url: string, init: RequestInit) => init.method === "POST"
       ? new Promise<Response>(resolve => requests.push({ body: JSON.parse(String(init.body)), resolve }))
       : Promise.resolve(Response.json({ status: "configured" })),
-    require: (name: string) => { if (name === "react") return react; if (name === "@/domain/character-dialogue") return characterContract; throw new Error(name); },
+    require: (name: string) => { if (name === "react") return react; if (name === "@/domain/character-dialogue") return characterContract; if (name === "@/domain/casual-dialogue") return casualDialogue; throw new Error(name); },
   });
   const hook = (fixture.exports as { useHouseholdConversation: typeof useHouseholdConversation }).useHouseholdConversation;
   function render() {
@@ -93,7 +94,7 @@ test("verified phone → shared AI conversation → web reply → bridge, then w
   assert.equal(h.deliveries.length, 1);
   assert.equal(h.deliveries[0].chat, `iMessage;-;${sender}`);
   assert.ok(h.deliveries[0].text.includes(phoneReply.text));
-  assert.match(h.deliveries[0].text, /Evie.*AI dialogue/);
+  assert.equal(h.deliveries[0].text, `${phoneReply.text}\n\n— Evie`);
   assert.equal(h.render().outboundTurns[0].origin, "imessage", "phone return is tagged to prevent web-mirror echoes");
 
   const web = h.render().dispatch("evie", "Do you remember what I enjoy?", { origin: "web" });
@@ -122,6 +123,24 @@ test("verified phone → shared AI conversation → web reply → bridge, then w
   assert.equal(h.plannerCalls.length, 3); h.unmount();
 });
 
+test("plain phone laughter keeps conversational fallback when AI is rejected, without starting a plan", async () => {
+  const h = household(); await h.ready();
+  const message = h.phone("lmao", "casual-phone");
+  assert.equal(message.applianceId, "evie");
+  const pending = h.render().dispatch(message.applianceId, message.text, { origin: "imessage", messageId: message.id });
+  h.requests.at(-1)!.resolve(Response.json({ error: "unsafe-character-reply" }, { status: 502 }));
+  const reply = await pending; assert.ok(reply);
+  assert.equal(reply.source, "local");
+  assert.ok(reply.text.length < 200);
+  assert.doesNotMatch(reply.text, /Find a cheaper plan|Use AM\/PM|approve and save|Try [‘']/);
+  assert.equal(h.render().forCharacter("evie").reply, reply.text);
+  assert.equal((await h.bridge.reply(h.pair.token, message.id, reply.text, config, h.send, reply.source)).status, 200);
+  assert.equal(h.deliveries[0].text, `${reply.text}\n\n— Evie · local reply (simulation)`);
+  assert.equal(h.requests.length, 1); assert.equal(h.plannerCalls.length, 1);
+  assert.equal(h.session().approved, null); assert.equal(h.session().pending, null);
+  assert.equal(h.session().status, "idle"); h.unmount();
+});
+
 test("provider failure yields the same labeled local reply on website and phone; phone approval never starts execution", async () => {
   const h = household(); await h.ready();
   for (const [index, input] of ["Evie: Find a cheaper plan", "approve"].entries()) {
@@ -133,7 +152,7 @@ test("provider failure yields the same labeled local reply on website and phone;
     assert.equal(h.render().forCharacter("evie").reply, reply.text);
     assert.equal((await h.bridge.reply(h.pair.token, message.id, reply.text, config, h.send, reply.source)).status, 200);
     assert.ok(h.deliveries.at(-1)!.text.includes(reply.text));
-    assert.match(h.deliveries.at(-1)!.text, /local planner/);
+    assert.match(h.deliveries.at(-1)!.text, /local reply/);
     assert.equal(h.session().approved, null); assert.equal(h.session().status, "idle");
   }
   assert.ok(h.session().pending, "a proposal may exist, but a phone message cannot approve it");
