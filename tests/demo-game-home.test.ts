@@ -1,4 +1,5 @@
 import * as messageHousehold from "../src/domain/message-household";
+import * as optimization from "../src/domain/household-optimization";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -19,6 +20,7 @@ import type { ApplianceId } from "../src/domain/appliances";
 type Element = { type: unknown; props: Record<string, unknown>; key?: string };
 const jsx = (type: unknown, props: Element["props"], key?: string): Element => ({ type, props, key });
 const Scene = () => null, Chat = () => null, Party = () => null, Link = () => null, Sprite = () => null;
+const Optimizer = () => null;
 const source = ts.transpileModule(readFileSync(resolve(process.cwd(), "src/components/demo-home-dashboard.tsx"), "utf8"), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
 }).outputText;
@@ -37,7 +39,7 @@ function text(node: unknown): string {
 /** Exercise the actual dashboard handlers against the real command/energy engine.
  * Child renderers and React scheduling are replaced, not the business decisions. */
 function home(expandedOnly = false) {
-  const scenario = demo.buildDemoScenario({ ...demo.DEFAULT_DEMO_PROFILE, applianceIds: expandedOnly ? [] : ["evie", "bubbles", "chill"], ...(expandedOnly ? { applimons: [catalog.createDemoApplimon("spin")] } : {}), weatherMode: "synthetic" });
+  let scenario = demo.buildDemoScenario({ ...demo.DEFAULT_DEMO_PROFILE, applianceIds: expandedOnly ? [] : ["evie", "bubbles", "chill"], ...(expandedOnly ? { applimons: [catalog.createDemoApplimon("spin")] } : {}), weatherMode: "synthetic" });
   let session = commands.createDemoCommandSession(scenario), tree: Element;
   let stateIndex = 0, refIndex = 0;
   const states: unknown[] = [], refs: { current: unknown }[] = [], effects: (() => void)[] = [];
@@ -51,7 +53,7 @@ function home(expandedOnly = false) {
     reset() { session = commands.resetDemoCommandSession(session, scenario); },
   });
   const testModule = { exports: {} };
-  runInNewContext(source, { module: testModule, exports: testModule.exports,
+  runInNewContext(source, { module: testModule, exports: testModule.exports, structuredClone,
     require(name: string) {
       if (name === "react/jsx-runtime") return { jsx, jsxs: jsx };
       if (name === "react") return {
@@ -66,6 +68,8 @@ function home(expandedOnly = false) {
         outboundTurns: [], invalidate() {},
       }) };
       if (name === "@/domain/message-household") return messageHousehold;
+      if (name === "@/domain/household-optimization") return optimization;
+      if (name === "./household-optimizer") return { HouseholdOptimizer: Optimizer };
       if (name === "@/domain/demo") return demo;
       if (name === "@/domain/demo-activity") return activity;
       if (name === "@/domain/simulation") return simulation;
@@ -104,7 +108,7 @@ function home(expandedOnly = false) {
   function button(label: string) { return all().find(element => element.type === "button" && (element.props["aria-label"] === label || text(element).replace(/\s+/g, " ").trim() === label))!; }
   function click(label: string) { const target = button(label); assert.ok(target, label); (target.props.onClick as () => void)(); render(); }
   render();
-  return { render, all, component, click, modal, session: () => session, counts: () => ({ sends, approvals, edited, recruited }), partyNavigation: () => ({ focused: partyFocused, scrolled: partyScrolled }) };
+  return { render, all, component, click, modal, replaceWeather() { scenario = demo.buildDemoScenario({ ...scenario.profile, weatherOffsetC: 5 }); render(); }, settleScenario() { session = commands.createDemoCommandSession(scenario); render(); }, session: () => session, counts: () => ({ sends, approvals, edited, recruited }), partyNavigation: () => ({ focused: partyFocused, scrolled: partyScrolled }) };
 }
 
 test("home game menus and preview scrubbing never approve or advance execution", () => {
@@ -117,6 +121,50 @@ test("home game menus and preview scrubbing never approve or advance execution",
   assert.equal(h.component(Scene).props.hour, 13);
   assert.equal(h.counts().sends, 0);
   h.click("Recruit"); assert.equal(h.counts().recruited, 1);
+});
+
+test("optimizer hides the old session while a replacement weather context is initializing", () => {
+  const h = home();
+  h.click("Optimize household schedule");
+  const original = h.component(Optimizer).props.context as optimization.CoordinatedContext;
+  h.replaceWeather();
+  assert.equal(h.component(Optimizer), undefined, "Never combine new weather with old session constraints");
+  assert.equal(h.all().find(node => node.props["aria-label"] === "Optimize household schedule")!.props.disabled, true);
+  assert.ok(h.all().some(node => node.props.role === "status" && /Updating the household/.test(text(node))));
+  h.settleScenario();
+  assert.notEqual((h.component(Optimizer).props.context as optimization.CoordinatedContext).contextKey, original.contextKey);
+  assert.equal(h.component(Optimizer).props.active, true);
+  assert.equal(h.session().status, "idle");
+  assert.equal(h.counts().approvals, 0);
+});
+
+test("Optimize opens a coordinated snapshot without executing or changing approved runs", () => {
+  const h = home();
+  (h.component(Scene).props.onSelect as (id: ApplianceId) => void)("bubbles"); h.render();
+  (h.component(Chat).props.onSend as (text: string, source: string) => void)("Don't run the dishwasher after 10 PM", "text"); h.render();
+  const proposal = h.session().pending; assert.ok(proposal);
+  h.click("Optimize household schedule");
+  assert.equal(h.modal.open, true);
+  assert.equal(h.component(Optimizer).props.active, true);
+  const context = h.component(Optimizer).props.context as optimization.CoordinatedContext;
+  assert.deepEqual(context.coreRequests, proposal.requests);
+  assert.equal(h.session().status, "idle"); assert.equal(h.counts().approvals, 0);
+  (h.component(Chat).props.onApprove as (id: string) => void)(proposal.id); h.render();
+  const approved = h.session().approved;
+  h.click("Close household menu"); h.click("Optimize household schedule");
+  assert.equal(h.session().approved, approved);
+  assert.equal(h.counts().approvals, 1);
+});
+
+test("coordinated optimizer receives the current expanded party revision without changing recruitment", () => {
+  const h = home(true);
+  const revised = { ...catalog.createDemoApplimon("spin"), latestStartHour: 12, deadlineHour: 15 };
+  (h.component(Party).props.onPlanningChange as (devices: catalog.ApplimonDevice[]) => void)([revised]); h.render();
+  h.click("Optimize household schedule");
+  const context = h.component(Optimizer).props.context as optimization.CoordinatedContext;
+  assert.equal(context.inventory[0].deadlineHour, 15);
+  assert.equal(context.inventory[0].latestStartHour, 12);
+  assert.equal(h.counts().recruited, 0); assert.equal(h.counts().approvals, 0);
 });
 
 test("home dialogue approval follows execution while a later preview leaves that run unchanged", () => {

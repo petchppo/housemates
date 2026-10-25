@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { APPLIMON_CATALOG, getApplimon, type ApplimonDevice, type ApplimonId } from "@/domain/applimon-catalog";
 import { getApplimonSimulationStats, optimizeApplimonTeam, type ApplimonTeamPlan } from "@/domain/applimon-planning";
 import { parseHouseholdIntent } from "@/domain/conversation";
@@ -11,15 +11,19 @@ import { ApplimonSprite } from "./applimon-sprite";
 import { useCharacterDialogue } from "./use-character-dialogue";
 import "./applimon-team-panel.css";
 
-type Props = { devices: readonly ApplimonDevice[]; energyProfile: readonly HourlyEnergy[]; onEdit: () => void; onActiveChange: (ids: ApplimonId[]) => void; active?: boolean };
+type Props = { devices: readonly ApplimonDevice[]; energyProfile: readonly HourlyEnergy[]; onEdit: () => void; onActiveChange: (ids: ApplimonId[]) => void; onPlanningChange?: (devices: ApplimonDevice[]) => void; active?: boolean };
 
 /** Changing reviewed passports or rates remounts this session and invalidates its approval. */
 export function ApplimonTeamPanel(props: Props) {
   return <TeamSession key={JSON.stringify([props.devices, props.energyProfile])} {...props}/>;
 }
 
-function TeamSession({ devices, energyProfile, onEdit, onActiveChange, active = true }: Props) {
+function TeamSession({ devices, energyProfile, onEdit, onActiveChange, onPlanningChange, active = true }: Props) {
   const [requests, setRequests] = useState<ApplimonDevice[]>(()=>structuredClone([...devices]));
+  const planningKey = JSON.stringify(requests);
+  const planningCallback = useRef(onPlanningChange);
+  useLayoutEffect(()=>{planningCallback.current=onPlanningChange;},[onPlanningChange]);
+  useLayoutEffect(()=>{planningCallback.current?.(JSON.parse(planningKey) as ApplimonDevice[]);},[planningKey]);
   const [mode, setMode] = useState<OptimizationMode>("cost");
   const [selected, setSelected] = useState<ApplimonId>(devices[0]?.id ?? "spin");
   const [text, setText] = useState("");

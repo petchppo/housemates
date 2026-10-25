@@ -1,4 +1,5 @@
 import * as messageHousehold from "../src/domain/message-household";
+import * as optimization from "../src/domain/household-optimization";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -58,6 +59,7 @@ function dashboard() {
     pause() {}, finishSimulation() {},
   });
   const modules: Record<string, unknown> = {
+    "@/domain/household-optimization": optimization, "./household-optimizer": { HouseholdOptimizer: Child },
     "@/domain/message-household": messageHousehold, "@/domain/demo": demo, "@/domain/demo-activity": activity, "@/domain/simulation": simulation,
     "@/domain/demo-commands": commands, "@/domain/weather-location": locations, "@/domain/demo-weather": weather,
     "@/domain/applimon-catalog": catalog, "@/data/demo-grid": grid, "@/data/city-landmarks": landmarks,

@@ -8,6 +8,8 @@ import * as demo from "../src/domain/demo";
 import * as commands from "../src/domain/demo-commands";
 import * as contract from "../src/domain/dialogue-contract";
 import * as tradeoffs from "../src/domain/plan-tradeoffs";
+import * as optimization from "../src/domain/household-optimization";
+import * as catalog from "../src/domain/applimon-catalog";
 
 type Element = { type: unknown; props: Record<string, unknown> };
 type ChartProps = { comparison: tradeoffs.PlanTradeoffs; onPropose: (mode: "cost" | "carbon" | "balanced") => void; disabled: boolean };
@@ -44,6 +46,8 @@ function harness() {
   const modules: Record<string, unknown> = {
     react, "react/jsx-runtime": { jsx, jsxs: jsx }, "next/link": "link",
     "@/domain/demo": demo, "@/domain/demo-commands": commands, "@/domain/dialogue-contract": contract, "@/domain/plan-tradeoffs": tradeoffs,
+    "@/domain/household-optimization": optimization, "@/domain/applimon-catalog": catalog,
+    "./household-optimizer": { HouseholdOptimizer: "optimizer" },
     "./cost-carbon-tradeoff": { CostCarbonTradeoff: "chart" }, "./pixel-appliance": { PixelAppliance: "portrait" },
     "./use-judge-dialogue": { useJudgeDialogue: () => assistant },
   };
@@ -81,6 +85,30 @@ test("judge graph recommendations preserve a negotiated dishwasher cutoff withou
   h.graph().onPropose("carbon"); h.render();
   assert.match(h.text(), /State:\s+idle/); assert.equal(h.button("Advance simulation 1 hour").props.disabled, true);
   assert.equal(h.button("Approve current proposal").props.disabled, false); h.unmount();
+});
+
+test("ten-appliance lab is opt-in and weather changes only its isolated planning snapshot", () => {
+  const h = harness();
+  const preview = () => h.elements().find(node => node.type === "optimizer")!.props as {
+    active: boolean; context: optimization.CoordinatedContext;
+  };
+  assert.equal(preview().active, false);
+  assert.equal(preview().context.inventory.length, 10);
+  const original = preview().context;
+  h.click("Optimize demo household");
+  assert.equal(preview().active, true);
+  const weather = h.elements().find(node => node.props.id === "judge-thermal-case")!;
+  (weather.props.onChange as (event: unknown) => void)({ target: { value: "10" } });
+  h.render();
+  assert.notEqual(preview().context.contextKey, original.contextKey);
+  assert.notDeepEqual(preview().context.backgroundPowerKw, original.backgroundPowerKw);
+  assert.deepEqual(preview().context.energyProfile, original.energyProfile);
+  assert.deepEqual(preview().context.coreRequests, original.coreRequests);
+  assert.match(h.text(), /State:\s+idle/);
+  assert.equal(h.button("Approve current proposal").props.disabled, true);
+  assert.equal(h.requests.length, 0);
+  assert.equal(h.assistantRequests.length, 0);
+  h.unmount();
 });
 
 test("model suggestions and typed approval cannot execute; explicit approval and reset stay session-only", () => {

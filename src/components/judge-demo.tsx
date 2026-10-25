@@ -9,6 +9,9 @@ import { suggestionCommand } from "@/domain/dialogue-contract";
 import { buildPlanTradeoffs } from "@/domain/plan-tradeoffs";
 import type { OptimizationMode } from "@/domain/scheduling";
 import { CostCarbonTradeoff } from "./cost-carbon-tradeoff";
+import { HouseholdOptimizer } from "./household-optimizer";
+import { buildCoordinatedContext } from "@/domain/household-optimization";
+import { APPLIMON_IDS, createDemoApplimon } from "@/domain/applimon-catalog";
 import { PixelAppliance } from "./pixel-appliance";
 import { useJudgeDialogue } from "./use-judge-dialogue";
 import "./judge-demo.css";
@@ -32,6 +35,11 @@ export function JudgeDemo() {
   const [reply, setReply] = useState("Choose an objective or type a request to create a calculated proposal.");
   const [bridge, setBridge] = useState("Not checked. No message is sent by this diagnostic.");
   const [checking, setChecking] = useState(false);
+  const [showWholeTeam, setShowWholeTeam] = useState(false);
+  const [temperatureOffset, setTemperatureOffset] = useState(0);
+  const wholeTeam = useMemo(() => buildCoordinatedContext(buildDemoScenario({ ...DEFAULT_DEMO_PROFILE,
+    regionId: "bangkok", applianceIds: ["evie", "bubbles", "chill"], applimons: APPLIMON_IDS.map(createDemoApplimon),
+    weatherMode: "synthetic", weatherOffsetC: temperatureOffset })), [temperatureOffset]);
   const bridgeRequest = useRef<AbortController | null>(null);
   const bridgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const active = session.pending ?? session.approved;
@@ -104,6 +112,7 @@ export function JudgeDemo() {
       <section className="jd-card jd-comparison" aria-labelledby="judge-compare-title"><p className="jd-eyebrow">02 / COMPARE THE MATH</p><h2 id="judge-compare-title">Every point is a real calculation.</h2><CostCarbonTradeoff comparison={comparison} selectedMode={mode} disabled={!!session.approved} onPropose={next => send(objectives[next], "evie")} /></section>
     </div>
     <section className="jd-card jd-execution" aria-labelledby="judge-execution-title"><div><p className="jd-eyebrow">03 / REVIEW & APPROVE</p><h2 id="judge-execution-title">Your simulated run</h2><p role="status">State: <strong>{session.status}</strong> · Clock: {formatDemoHour(session.executionHour)}</p><p className="jd-note">The clock moves only with the explicit advance button here. No background run, devices, audio, or household memory.</p></div><div>{active ? <><p>{active.mode} objective · {session.approved ? "Approved" : "For review"}</p><ul>{active.plan.schedules.map(row => <li key={row.applianceId}>{names[row.applianceId]}: {formatDemoHour(row.startHour)} → {formatDemoHour(row.endHour)}</li>)}</ul>{active.plan.status !== "feasible" && <p role="alert">{active.plan.issues.join(" ")}</p>}</> : <p>No proposal yet. Choose a graph objective or ask the crew.</p>}<div className="jd-actions"><button type="button" disabled={!session.pending || session.pending.plan.status !== "feasible"} onClick={() => { if (session.pending) commit(approveDemoCommand(current.current, scenario, session.pending.id)); }}>Approve current proposal</button><button type="button" className="jd-secondary" disabled={session.status !== "running"} onClick={() => commit(advanceDemoExecution(current.current, scenario, Math.min(48, current.current.executionHour + 1)))}>Advance simulation 1 hour</button><button type="button" className="jd-secondary" onClick={reset}>Reset judge session</button></div></div></section>
+    <section className="jd-card" aria-label="Ten-appliance optimization lab"><p className="jd-eyebrow">WHOLE TEAM / JOINT SCHEDULING</p><h2>Ten characters. One power budget.</h2><p className="jd-note">Isolated synthetic fixture: six flexible jobs, a fixed fan, and three protected teammates. Nothing here changes your saved home or the separate core simulation above.</p><label htmlFor="judge-thermal-case">Synthetic temperature scenario</label><select id="judge-thermal-case" value={temperatureOffset} onChange={event=>setTemperatureOffset(Number(event.target.value))}><option value={0}>Typical day</option><option value={-10}>Cooler day (−10°C)</option><option value={10}>Hotter day (+10°C)</option></select>{!showWholeTeam&&<div className="jd-actions"><button type="button" onClick={()=>setShowWholeTeam(true)}>Optimize demo household</button></div>}<div hidden={!showWholeTeam}><HouseholdOptimizer context={wholeTeam} active={showWholeTeam} initialMode="cost"/></div></section>
     <section className="jd-card jd-bridge" aria-labelledby="judge-bridge-title"><div><p className="jd-eyebrow">OPTIONAL / MESSAGE TRANSPORT</p><h2 id="judge-bridge-title">BlueBubbles connection check</h2><p className="jd-note">Checks the configured Mac bridge only. Pairing and real-message verification belong to the Messages card in your home.</p></div><div><p role="status">{bridge}</p><button type="button" disabled={checking} onClick={() => void checkBridge()}>{checking ? "Checking bridge…" : "Check bridge reachability"}</button></div></section>
     <footer className="jd-note">Synthetic prices and grid intensity; modeled estimates, never measured savings. Cost/carbon comparisons exclude AC and protected loads.</footer>
   </main>;

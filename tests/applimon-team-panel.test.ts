@@ -37,6 +37,7 @@ function panel(initial = [catalog.createDemoApplimon("spin"), catalog.createDemo
     clear() { aiClears++; ai.reply = null; ai.history = []; dirty = true; },
   };
   const active: catalog.ApplimonId[][] = [];
+  const planningChanges: catalog.ApplimonDevice[][] = [];
   const document = { hidden: false, addEventListener: (name: string, fn: () => void) => listeners.set(name, fn), removeEventListener: (name: string) => listeners.delete(name) };
   const react = {
     useState(initial: unknown) { const i = si++; if (!(i in states)) states[i] = typeof initial === "function" ? initial() : initial;
@@ -51,7 +52,7 @@ function panel(initial = [catalog.createDemoApplimon("spin"), catalog.createDemo
   runInNewContext(source, { module: testModule, exports: testModule.exports, document, structuredClone,
     window: { setInterval: (fn: () => void) => { timers.set(++timerId, fn); return timerId; }, clearInterval: (id: number) => timers.delete(id) },
     require(name: string) {
-      if (name === "react") return react;
+      if (name === "react") return { ...react, useLayoutEffect: react.useEffect };
       if (name === "react/jsx-runtime") return { jsx, jsxs: jsx, Fragment: "fragment" };
       if (name === "@/domain/applimon-catalog") return catalog;
       if (name === "@/domain/applimon-planning") return planning;
@@ -66,7 +67,7 @@ function panel(initial = [catalog.createDemoApplimon("spin"), catalog.createDemo
   const component = (testModule.exports as { ApplimonTeamPanel: (props: unknown) => Element }).ApplimonTeamPanel;
   const onActiveChange = (ids: catalog.ApplimonId[]) => active.push(ids);
   function render() {
-    const child = component({ devices, energyProfile: hourlyEnergy, onEdit() {}, onActiveChange, active: visible });
+    const child = component({ devices, energyProfile: hourlyEnergy, onEdit() {}, onActiveChange, active: visible, onPlanningChange: (rows: catalog.ApplimonDevice[]) => planningChanges.push(rows) });
     if (key !== child.key) { effects.forEach(effect => effect.cleanup?.()); states = []; refs = []; effects = []; key = child.key; }
     si = ri = ei = 0; dirty = false;
     tree = (child.type as (props: Element["props"]) => Element)(child.props);
@@ -77,7 +78,7 @@ function panel(initial = [catalog.createDemoApplimon("spin"), catalog.createDemo
   function button(label: string) { return find(node => node.type === "button" && text(node).trimStart().startsWith(label)); }
   function click(label: string) { const node = button(label); assert.notEqual(node.props.disabled, true); (node.props.onClick as () => void)(); settle(); }
   render(); settle();
-  return { click, button, active, timers, document, listeners, ai, aiCalls, get aiClears() { return aiClears; }, get aiActive() { return aiActive; }, refresh() { render(); settle(); }, setVisible(value: boolean) { visible = value; render(); settle(); }, text: () => text(tree).replace(/\s+/g, " "),
+  return { click, button, active, planningChanges, timers, document, listeners, ai, aiCalls, get aiClears() { return aiClears; }, get aiActive() { return aiActive; }, refresh() { render(); settle(); }, setVisible(value: boolean) { visible = value; render(); settle(); }, text: () => text(tree).replace(/\s+/g, " "),
     command(value: string) { const input = find(node => node.props.id === "party-message"); (input.props.onChange as (event: unknown) => void)({ target: { value } }); settle();
       const form = find(node => node.type === "form"); (form.props.onSubmit as (event: unknown) => void)({ preventDefault() {} }); settle(); },
     replace(next: catalog.ApplimonDevice[]) { devices = next; render(); settle(); },
@@ -165,4 +166,21 @@ test("expanded fallback keeps API disclosure and planner details when provider f
   ui.command("Find a cheaper plan"); assert.equal(ui.aiCalls.length, 1); assert.match(ui.aiCalls[0].plannerReply, /kWh/);
   assert.match(ui.text(), /Local fallback · simulated/); assert.match(ui.text(), /API charges may apply/); assert.match(ui.text(), /Planner details/);
   assert.equal(ui.timers.size, 0); ui.unmount();
+});
+
+
+test("planning callback exposes negotiated and approved inputs without callback-identity loops", () => {
+  const ui = panel();
+  assert.equal(ui.planningChanges.length, 1);
+  ui.refresh(); assert.equal(ui.planningChanges.length, 1);
+  ui.command("start between 9 AM and 4 PM");
+  assert.equal(ui.planningChanges.at(-1)![0].earliestStartHour, 9);
+  assert.equal(ui.planningChanges.at(-1)![0].latestStartHour, 16);
+  const count = ui.planningChanges.length;
+  ui.click("Approve party simulation"); ui.tick(); ui.refresh();
+  assert.equal(ui.planningChanges.length, count);
+  assert.equal(ui.planningChanges.at(-1)![0].earliestStartHour, 9);
+  ui.replace([catalog.createDemoApplimon("rover")]);
+  assert.equal(ui.planningChanges.at(-1)![0].id, "rover");
+  ui.unmount();
 });
