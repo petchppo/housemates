@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ApplianceId } from "@/domain/appliances";
 import type { MessageConversationHandler, MessageConversationReply, MessageSyncTurn } from "@/domain/message-conversation";
 import "./messages-connection.css";
@@ -9,21 +9,59 @@ type Props = { contextKey: string; applianceIds: readonly ApplianceId[]; onComma
 type Pairing = { token: string; code: string; recipient: string; expiresAt: number };
 type Diagnostics = { lastInboundAt: number | null; lastInboundOutcome: "queued" | "unsupported-command" | null; lastReplyAt: number | null; lastReplyOutcome: "accepted" | "unconfirmed" | null; pendingCount: number };
 class BridgeClientError extends Error { constructor(message: string, readonly status: number) { super(message); } }
-type ApiResult = { available?: boolean; message?: string; error?: string; token?: string; code?: string; recipient?: string; expiresAt?: number; state?: string; diagnostics?: Diagnostics; messages?: Array<{ id: string; applianceId: ApplianceId; text: string; expiresAt: number }> };
+type ApiResult = { available?: boolean; message?: string; error?: string; token?: string; code?: string; recipient?: string; expiresAt?: number; state?: string; remembered?: boolean; diagnostics?: Diagnostics; messages?: Array<{ id: string; applianceId: ApplianceId; text: string; expiresAt: number }> };
+
+async function api(action: string, capability?: string, extra: Record<string, string> = {}, signal?: AbortSignal) {
+    const controller = new AbortController();
+    let timer: number | undefined;
+    let cancel = () => {};
+    const deadline = new Promise<never>((_resolve, reject) => {
+      cancel = () => { controller.abort(); reject(new Error("Messaging request cancelled.")); };
+      signal?.addEventListener("abort", cancel, { once: true });
+      if (signal?.aborted) { cancel(); return; }
+      timer = window.setTimeout(() => {
+        controller.abort();
+        reject(new Error(action === "reply" || action === "publish"
+          ? "Reply delivery timed out. Check Messages; no automatic resend was made. Listening for new requests will resume."
+          : action === "poll" ? "Messaging connection timed out. Retrying the connection automatically; keep this tab visible."
+          : action === "pair" ? "Pairing request timed out. Select Pair my iPhone to try again."
+          : "Messaging request timed out."));
+      }, 20_000);
+    });
+    try {
+      return await Promise.race([deadline, (async () => {
+        const response = await fetch("/api/imessage", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", ...(capability ? { Authorization: `Bearer ${capability}` } : {}) }, body: JSON.stringify({ action, ...extra }), signal: controller.signal });
+        const data = await response.json() as ApiResult;
+        if (!response.ok) throw new BridgeClientError(data.error ?? "Messaging request failed.", response.status);
+        return data;
+      })()]);
+    } finally {
+      window.clearTimeout(timer);
+      signal?.removeEventListener("abort", cancel);
+    }
+  }
+
 
 /** A household change unmounts the old capability; no phone request can leak into another world. */
-export function MessagesConnection({ contextKey, ...props }: Props) { return <MessagesSession key={contextKey} {...props}/>; }
+export function MessagesConnection({ contextKey, ...props }: Props) { return <MessagesSession key={contextKey} contextKey={contextKey} {...props}/>; }
 
-function MessagesSession({ applianceIds, onCommand, outboundTurns }: Omit<Props, "contextKey">) {
+function MessagesSession({ contextKey, applianceIds, onCommand, outboundTurns }: Props) {
   const [available, setAvailable] = useState<boolean | null>(null);
   const [pairing, setPairing] = useState<Pairing | null>(null);
   const [paired, setPaired] = useState(false);
+  const [remembered, setRemembered] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [restoreBlocked, setRestoreBlocked] = useState<"household" | "elsewhere" | null>(null);
   const [connectionError, setConnectionError] = useState(false);
   const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("Checking the optional messaging bridge…");
   const current = useRef({ applianceIds, onCommand });
   const token = useRef<string | null>(null);
+  const lifecycle = useRef<AbortController | null>(null);
+  const pollingAbort = useRef<AbortController | null>(null);
+  const recovered = useRef(false);
+  const rememberAttempted = useRef<string | null>(null);
   const seen = useRef(new Set<string>());
   const generation = useRef(0);
   const pollingFailed = useRef(false);
@@ -55,53 +93,67 @@ function MessagesSession({ applianceIds, onCommand, outboundTurns }: Omit<Props,
     if (!paired) outbound.current = [];
     commitWaiter.current?.check();
   }, [outboundTurns, paired]);
-  useEffect(() => {
-    const abort = new AbortController();
-    const invalidate = () => { generation.current++; };
-    fetch("/api/imessage", { cache: "no-store", signal: abort.signal }).then(async response => {
-      const data = await response.json() as ApiResult;
-      if (abort.signal.aborted) return;
-      setAvailable(response.ok && data.available === true);
-      setNotice(data.message ?? "Messaging bridge is unavailable. In-app chat still works.");
-    }).catch(() => { if (!abort.signal.aborted) { setAvailable(false); setNotice("Messaging bridge could not be reached. In-app chat still works."); } });
-    return () => {
-      abort.abort(); invalidate();
-      activeConversation.current?.abort();
-      commitWaiter.current?.cancel();
-      const old = token.current; token.current = null;
-      if (old) void fetch("/api/imessage", { method: "POST", keepalive: true, headers: { "Content-Type": "application/json", Authorization: `Bearer ${old}` }, body: JSON.stringify({ action: "disconnect" }) }).catch(() => {});
-    };
+  const adopt = useCallback((data: ApiResult, restored: boolean) => {
+    if (typeof data.token !== "string" || !/^[a-f0-9]{64}$/.test(data.token) || typeof data.code !== "string" ||
+      (!restored && !/^[A-F0-9]{12}$/.test(data.code)) || typeof data.recipient !== "string" || !data.recipient || data.recipient.length > 254 ||
+      typeof data.expiresAt !== "number" || !Number.isFinite(data.expiresAt) || data.expiresAt <= Date.now() ||
+      (restored && (data.state !== "paired" || data.remembered !== true))) throw new Error("The bridge returned an incomplete pairing response.");
+    token.current = data.token;
+    setPairing({ token: data.token, code: data.code, recipient: data.recipient, expiresAt: data.expiresAt });
+    setPaired(restored); setRemembered(restored); setRestoreBlocked(null); setConnectionError(false); setDiagnostics(null);
+    pollingFailed.current = false; rememberAttempted.current = restored ? data.token : null;
+    outbound.current = [];
+    // Reattachment never replays history or an uncertain delivery from the previous session.
+    for (const turn of sharedTurns.current ?? []) mirrored.current.add(turn.id);
+    if (!restored) seen.current.clear();
+    setNotice(restored ? "Your remembered phone is connected again. Keep this household tab open and visible for replies." : "Send the pairing code from your configured phone. Codes expire in five minutes.");
   }, []);
 
-  async function api(action: string, capability?: string, extra: Record<string, string> = {}, signal?: AbortSignal) {
-    const controller = new AbortController();
-    let timer: number | undefined;
-    let cancel = () => {};
-    const deadline = new Promise<never>((_resolve, reject) => {
-      cancel = () => { controller.abort(); reject(new Error("Messaging request cancelled.")); };
-      signal?.addEventListener("abort", cancel, { once: true });
-      if (signal?.aborted) { cancel(); return; }
-      timer = window.setTimeout(() => {
-        controller.abort();
-        reject(new Error(action === "reply" || action === "publish"
-          ? "Reply delivery timed out. Check Messages; no automatic resend was made. Listening for new requests will resume."
-          : action === "poll" ? "Messaging connection timed out. Retrying the connection automatically; keep this tab visible."
-          : action === "pair" ? "Pairing request timed out. Select Pair my iPhone to try again."
-          : "Messaging request timed out."));
-      }, 20_000);
-    });
+  const restore = useCallback(async (signal: AbortSignal, epoch: number) => {
+    setRestoring(true); setBusy(true); setNotice("Restoring your remembered phone connection…");
     try {
-      return await Promise.race([deadline, (async () => {
-        const response = await fetch("/api/imessage", { method: "POST", headers: { "Content-Type": "application/json", ...(capability ? { Authorization: `Bearer ${capability}` } : {}) }, body: JSON.stringify({ action, ...extra }), signal: controller.signal });
+      const data = await api("resume", undefined, { contextKey }, signal);
+      if (signal.aborted || epoch !== generation.current) return;
+      if (data.state === "paired") adopt(data, true);
+      else if (data.state === "unpaired") {
+        setRemembered(false); setRestoreBlocked(null);
+        setNotice("No remembered phone for this browser. Pair once to reconnect automatically on future visits.");
+      } else throw new Error("The bridge returned an invalid connection state.");
+    } catch (error) {
+      if (signal.aborted || epoch !== generation.current) return;
+      if (error instanceof BridgeClientError && error.status === 409) {
+        setRestoreBlocked("household");
+        setNotice("Your remembered phone belongs to another household. It has not been connected here. Return to that household or disconnect the remembered phone before pairing here.");
+      } else setNotice("Could not restore the remembered phone connection. Your saved pairing was not removed. Try refreshing when the bridge is available, or pair manually.");
+    } finally { if (!signal.aborted && epoch === generation.current) { setRestoring(false); setBusy(false); } }
+  }, [adopt, contextKey]);
+
+  useLayoutEffect(() => {
+    const abort = new AbortController(); lifecycle.current = abort;
+    const invalidate = () => { generation.current++; };
+    return () => {
+      invalidate(); abort.abort(); pollingAbort.current?.abort();
+      activeConversation.current?.abort(); commitWaiter.current?.cancel();
+      const old = token.current; token.current = null;
+      if (old) void fetch("/api/imessage", { method: "POST", credentials: "same-origin", keepalive: true, headers: { "Content-Type": "application/json", Authorization: `Bearer ${old}` }, body: JSON.stringify({ action: "detach" }) }).catch(() => {});
+    };
+  }, []);
+  useEffect(() => {
+    const abort = lifecycle.current!;
+    const epoch = generation.current;
+    void (async () => {
+      try {
+        const response = await fetch("/api/imessage", { cache: "no-store", signal: abort.signal });
         const data = await response.json() as ApiResult;
-        if (!response.ok) throw new BridgeClientError(data.error ?? "Messaging request failed.", response.status);
-        return data;
-      })()]);
-    } finally {
-      window.clearTimeout(timer);
-      signal?.removeEventListener("abort", cancel);
-    }
-  }
+        if (abort.signal.aborted || epoch !== generation.current) return;
+        const configured = response.ok && data.available === true;
+        setAvailable(configured);
+        setNotice(data.message ?? "Messaging bridge is unavailable. In-app chat still works.");
+        if (configured) await restore(abort.signal, epoch);
+      } catch { if (!abort.signal.aborted && epoch === generation.current) { setAvailable(false); setNotice("Messaging bridge could not be reached. In-app chat still works."); } }
+    })();
+  }, [restore]);
+
 
   async function conversationReply(id: ApplianceId, text: string, messageId: string, expiresAt: number, parentSignal: AbortSignal) {
     const controller = new AbortController();
@@ -152,7 +204,7 @@ function MessagesSession({ applianceIds, onCommand, outboundTurns }: Omit<Props,
 
   useEffect(() => {
     if (!pairing) return;
-    const abort = new AbortController();
+    const abort = new AbortController(); pollingAbort.current = abort;
     let inFlight = false;
     const publishQueued = async (before?: Set<string>) => {
       while (outbound.current.length && !document.hidden && !abort.signal.aborted && token.current === pairing.token) {
@@ -174,6 +226,23 @@ function MessagesSession({ applianceIds, onCommand, outboundTurns }: Omit<Props,
         const data = await api("poll", pairing.token, {}, abort.signal);
         if (abort.signal.aborted || document.hidden) return;
         setPaired(data.state === "paired");
+        // A proven healthy replacement ends this recovery episode; an immediately
+        // rejected replacement must not trigger another resume loop.
+        if (data.state === "paired") recovered.current = false;
+        if (data.state === "paired" && rememberAttempted.current !== pairing.token) {
+          rememberAttempted.current = pairing.token;
+          try {
+            const saved = await api("remember", pairing.token, { contextKey }, abort.signal);
+            if (abort.signal.aborted || token.current !== pairing.token) return;
+            if (saved.remembered !== true) throw new Error("Remembering this pairing was not confirmed.");
+            setRemembered(true);
+            setNotice("Phone paired and remembered in this browser. Refresh will reconnect automatically; keep a household tab visible for replies.");
+          } catch {
+            if (abort.signal.aborted || token.current !== pairing.token) return;
+            setRemembered(false);
+            setNotice("Phone connected for now, but remembering this pairing was not confirmed. You may need to pair again after refresh.");
+          }
+        }
         if (pollingFailed.current) {
           pollingFailed.current = false;
           setNotice("Connection restored. Listening for phone requests while this tab is visible.");
@@ -226,8 +295,17 @@ function MessagesSession({ applianceIds, onCommand, outboundTurns }: Omit<Props,
         if (!abort.signal.aborted) {
           setConnectionError(true);
           pollingFailed.current = true;
-          if (error instanceof BridgeClientError && error.status === 401) { token.current = null; setPairing(null); setPaired(false); }
-          setNotice(error instanceof Error ? error.message : "Pairing needs attention. Disconnect and pair again.");
+          if (error instanceof BridgeClientError && (error.status === 401 || error.status === 409)) {
+            token.current = null; setPairing(null); setPaired(false); outbound.current = [];
+            activeConversation.current?.abort(); commitWaiter.current?.cancel();
+            if (error.status === 409) {
+              setRestoreBlocked("elsewhere"); setConnectionError(false);
+              setNotice("This phone is linked in another tab. Continue there, or pair this tab explicitly. Automatic reconnect is stopped here.");
+            } else if (!recovered.current && lifecycle.current && !lifecycle.current.signal.aborted) {
+              recovered.current = true;
+              await restore(lifecycle.current.signal, ++generation.current);
+            } else setNotice("The phone session ended. Automatic reconnect was already attempted for this interruption; pair manually or refresh to try again.");
+          } else setNotice(error instanceof Error ? error.message : "Pairing needs attention. Disconnect and pair again.");
         }
       } finally { inFlight = false; }
     };
@@ -236,37 +314,35 @@ function MessagesSession({ applianceIds, onCommand, outboundTurns }: Omit<Props,
     const visibility = () => { if (document.hidden) { activeConversation.current?.abort(); commitWaiter.current?.cancel(); } else void poll(); };
     document.addEventListener("visibilitychange", visibility);
     return () => { abort.abort(); activeConversation.current?.abort(); commitWaiter.current?.cancel(); window.clearInterval(interval); document.removeEventListener("visibilitychange", visibility); };
-  }, [pairing]);
+  }, [pairing, contextKey, restore]);
 
   async function pair() {
-    if (busy || !available) return;
+    if (busy || !available || !lifecycle.current || lifecycle.current.signal.aborted) return;
     const epoch = ++generation.current; setBusy(true);
     try {
-      const data = await api("pair");
-      if (!data.token || !data.code || !data.recipient || !data.expiresAt) throw new Error("The bridge returned an incomplete pairing response.");
-      if (epoch !== generation.current) { void api("disconnect", data.token).catch(() => {}); return; }
-      token.current = data.token;
-      setPairing({ token: data.token, code: data.code, recipient: data.recipient, expiresAt: data.expiresAt });
-      pollingFailed.current = false;
-      setPaired(false); setConnectionError(false); setDiagnostics(null); seen.current.clear(); setNotice("Send the pairing code from your configured phone. Codes expire in five minutes.");
+      const data = await api("pair", undefined, { contextKey }, lifecycle.current.signal);
+      if (epoch !== generation.current) { if (data.token) void api("detach", data.token).catch(() => {}); return; }
+      adopt(data, false);
     } catch (error) { if (epoch === generation.current) setNotice(error instanceof Error ? error.message : "Pairing failed."); }
     finally { if (epoch === generation.current) setBusy(false); }
   }
+
   async function disconnect() {
     const old = token.current; token.current = null; const epoch = ++generation.current;
-    activeConversation.current?.abort(); commitWaiter.current?.cancel(); outbound.current = [];
+    pollingAbort.current?.abort(); activeConversation.current?.abort(); commitWaiter.current?.cancel(); outbound.current = [];
     pollingFailed.current = false;
-    setPairing(null); setPaired(false); setConnectionError(false); setDiagnostics(null); setBusy(false); seen.current.clear();
-    setNotice("Disconnected in this browser. In-app chat remains available.");
-    if (old) try { await api("disconnect", old); } catch { if (epoch === generation.current) setNotice("This browser stopped processing messages. Server revocation was not confirmed; its session will expire automatically."); }
+    setPairing(null); setPaired(false); setRemembered(false); setRestoreBlocked(null); setRestoring(false); setConnectionError(false); setDiagnostics(null); setBusy(false); seen.current.clear();
+    setNotice("Disconnected here. Forgetting the remembered phone pairing…");
+    try { await api("disconnect", old ?? undefined); if (epoch === generation.current) setNotice("Disconnected and forgot the remembered phone pairing. In-app chat remains available."); } catch { if (epoch === generation.current) { setRestoreBlocked("household"); setNotice("This tab stopped processing messages, but forgetting the saved pairing was not confirmed. Use Disconnect remembered phone to retry before refreshing."); } }
   }
 
   return <section className="hm-messages-connect" aria-labelledby="hm-messages-title">
     <div><p className="hm-messages-kicker">TAKE YOUR TEAM WITH YOU</p><h2 id="hm-messages-title">Your applimon, in Messages.</h2><p>One conversation on the website and your phone. AI uses the web chat’s persona and recent context; your open household stays in charge of every approval.</p><p>Pairing enables phone text and new website turns to use this shared conversation. When AI is configured, text, planner details and recent chat go to OpenAI; API charges may apply. No photos or audio are sent to the model.</p></div>
-    <span className={`hm-messages-badge${paired && !connectionError ? " is-paired" : ""}`}>{connectionError && pairing ? "CONNECTION INTERRUPTED · RETRYING" : paired ? "PAIRED TO THIS TAB" : available ? "READY TO PAIR" : "NOT CONNECTED"}</span>
+    <span className={`hm-messages-badge${paired && !connectionError ? " is-paired" : ""}`}>{restoring ? "RESTORING PHONE LINK" : restoreBlocked === "elsewhere" ? "LINKED IN ANOTHER TAB" : connectionError && pairing ? "CONNECTION INTERRUPTED · RETRYING" : paired ? remembered ? "PAIRED · REMEMBERED" : "PAIRED TO THIS TAB" : available ? "READY TO PAIR" : "NOT CONNECTED"}</span>
     <p className="hm-messages-notice" role="status">{notice}</p>
     {paired && diagnostics && <p className="hm-messages-diagnostics">{diagnostics.lastInboundAt === null ? "No phone request received in this pairing yet." : `Last verified phone request: ${new Date(diagnostics.lastInboundAt).toLocaleTimeString()}. ${diagnostics.lastInboundOutcome === "unsupported-command" ? "Unknown teammate prefix. Use Evie:, Bubbles: or Chill:." : "Request queued for this household."}`} {diagnostics.lastReplyAt !== null && `Last reply: ${new Date(diagnostics.lastReplyAt).toLocaleTimeString()} — ${diagnostics.lastReplyOutcome === "accepted" ? "accepted by BlueBubbles; phone receipt not confirmed" : "delivery unconfirmed"}.`} {diagnostics.pendingCount > 0 && `${diagnostics.pendingCount} waiting.`}</p>}
-    {pairing ? <><div className="hm-messages-pair"><p>{paired ? "Phone connected. Try sending:" : <>In Messages, send to <strong>{pairing.recipient}</strong>:</>}</p><code>{paired ? "Evie: Find a cheaper plan" : `PAIR ${pairing.code}`}</code>{!paired && <p>Use the phone configured by your bridge administrator. A code alone does not grant access from another sender.</p>}</div><button type="button" onClick={disconnect}>Disconnect Messages</button></> : <button type="button" disabled={!available || busy} onClick={pair}>{busy ? "Creating pairing code…" : "Pair my iPhone"}</button>}
-    <details><summary>How this connection works</summary><ol><li>Configure a BlueBubbles server on a Mac and one allowed iMessage sender. No bridge account is currently provided by Housemates.</li><li>Pair this browser with your phone using the code. Keep this tab open and visible.</li><li>Text <code>Evie:</code>, <code>Bubbles:</code> or <code>Chill:</code> to choose a teammate. Plain follow-ups stay with the last teammate; a new pairing starts with Evie. Replies use the same web conversation.</li><li>Review and approve proposals here. Sending “approve” in Messages never starts a task.</li></ol><p>Text travels through Apple, your Mac bridge and this app server. The mailbox is temporary; unprocessed requests expire after five minutes. Refreshing, changing households or restarting the server requires pairing again. New website turns also sync while paired; earlier history is not replayed. No photos, attachments, group chats or automatic background execution.</p></details>
+    {pairing ? <><div className="hm-messages-pair"><p>{paired ? "Phone connected. Try sending:" : <>In Messages, send to <strong>{pairing.recipient}</strong>:</>}</p><code>{paired ? "Evie: Find a cheaper plan" : `PAIR ${pairing.code}`}</code>{!paired && <p>Use the phone configured by your bridge administrator. A code alone does not grant access from another sender.</p>}</div><button type="button" onClick={disconnect}>Disconnect Messages</button></> : <button type="button" disabled={!available || busy} onClick={pair}>{restoring ? "Restoring phone connection…" : busy ? "Creating pairing code…" : "Pair my iPhone"}</button>}
+    {restoreBlocked && !pairing && <button type="button" onClick={disconnect}>Disconnect remembered phone</button>}
+    <details><summary>How this connection works</summary><ol><li>Configure a BlueBubbles server on a Mac and one allowed iMessage sender. No bridge account is currently provided by Housemates.</li><li>Pair this browser with your phone using the code. The remembered pairing reconnects after refresh; keep a household tab open and visible for replies.</li><li>Text <code>Evie:</code>, <code>Bubbles:</code> or <code>Chill:</code> to choose a teammate. Plain follow-ups stay with the last teammate; a new pairing starts with Evie. Replies use the same web conversation.</li><li>Review and approve proposals here. Sending “approve” in Messages never starts a task.</li></ol><p>Text travels through Apple, your Mac bridge and this app server. The mailbox is temporary; unprocessed requests expire after five minutes. A protected browser cookie remembers this phone for this household. Refreshing or restarting the app server can restore it automatically; a different household never attaches silently. Disconnect forgets the pairing. No replies are generated while the browser is closed or offline. Reopen the household and send a new request; old requests are not replayed. New website turns also sync while paired; earlier history is not replayed. No photos, attachments, group chats or automatic background execution.</p></details>
   </section>;
 }

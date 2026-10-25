@@ -10,6 +10,7 @@ import { useDemoCommands } from "./use-demo-commands";
 import { ApplianceChat } from "./appliance-chat";
 import { ApplimonTeamPanel } from "./applimon-team-panel";
 import { MessagesConnection } from "./messages-connection";
+import { messageHouseholdContext } from "@/domain/message-household";
 import { useHouseholdConversation } from "./use-household-conversation";
 import { weatherLocationLabel } from "@/domain/weather-location";
 import { isWeatherSnapshotFresh } from "@/domain/demo-weather";
@@ -127,7 +128,7 @@ export function DemoHomeDashboard({ scenario, mode, notice, onEdit, onAddApplian
         </div>
         <div hidden={panel!=="weather"}>    <section className="dh-weather-snapshot" aria-label="Forecast used in this plan"><div><p className="demo-eyebrow">{scenario.weather.source==="live" ? "OPEN-METEO / ACTUAL CITY FORECAST" : "SYNTHETIC WEATHER / DEMO OR FALLBACK"}</p>{scenario.weather.location&&<p><b>{weatherLocationLabel(scenario.weather.location)}</b></p>}<strong>{scenario.weather.temperatureC.toFixed(1)}°C · {scenario.weather.humidityPercent}% humidity</strong><p>{scenario.weather.source==="live" ? `${scenario.weather.currentTime.replace("T"," ")} · ${scenario.weather.timezone}. ${isWeatherSnapshotFresh(scenario.weather)?"Recent forecast snapshot.":"Saved forecast snapshot; refresh before making a new plan."} ${scenario.weather.nextDayHourly?"Two distinct forecast days drive modeled cooling.":"One forecast day is repeated in the simulation."}` : scenario.weather.fallbackReason ?? scenario.weather.sourceLabel}</p><p>{forecastNotice} Electricity rates and carbon remain synthetic; this is outdoor weather, not household telemetry.</p></div><button type="button" disabled={forecastLoading||!!session.approved||scenario.profile.weatherMode!=="live"} onClick={onRefreshForecast}>{forecastLoading?"Loading forecast…":"Refresh forecast"}</button>{session.approved&&<small>Start a new simulated day before replacing its weather snapshot.</small>}</section>
 </div>
-        <div hidden={panel!=="link"}>{commands.ready&&<MessagesConnection contextKey={JSON.stringify(scenario.profile)} applianceIds={scenario.profile.applianceIds} onCommand={(id,text,options)=>conversation.dispatch(id,text,{origin:"imessage",...options})} outboundTurns={conversation.outboundTurns}/>}</div>
+        <div hidden={panel!=="link"}>{commands.ready&&<MessagesConnection contextKey={messageHouseholdContext(scenario.profile)} applianceIds={scenario.profile.applianceIds} onCommand={(id,text,options)=>conversation.dispatch(id,text,{origin:"imessage",...options})} outboundTurns={conversation.outboundTurns}/>}</div>
         {notice&&<p className="dh-notice" role="status">{notice}</p>}
       </div>
     </dialog>

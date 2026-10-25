@@ -1,3 +1,4 @@
+import * as messageHousehold from "../src/domain/message-household";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -57,7 +58,7 @@ function dashboard() {
     pause() {}, finishSimulation() {},
   });
   const modules: Record<string, unknown> = {
-    "@/domain/demo": demo, "@/domain/demo-activity": activity, "@/domain/simulation": simulation,
+    "@/domain/message-household": messageHousehold, "@/domain/demo": demo, "@/domain/demo-activity": activity, "@/domain/simulation": simulation,
     "@/domain/demo-commands": commands, "@/domain/weather-location": locations, "@/domain/demo-weather": weather,
     "@/domain/applimon-catalog": catalog, "@/data/demo-grid": grid, "@/data/city-landmarks": landmarks,
     "./household-scene-3d": { HouseholdScene3D: Child }, "./appliance-chat": { ApplianceChat: Chat },

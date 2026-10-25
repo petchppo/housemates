@@ -19,13 +19,18 @@ function text(value: unknown): string {
   if (Array.isArray(value)) return value.map(text).join(" ");
   return value && typeof value === "object" && "props" in value ? text((value as Element).props.children) : "";
 }
-function harness(options: { available?: boolean; replyFails?: boolean; publishFails?: boolean; handler?: MessageConversationHandler; outboundTurns?: MessageSyncTurn[]; paired?: boolean } = {}) {
+function harness(options: { cookie?: { context: string | null }; contextKey?: string; resume?: () => Promise<Response>; rememberFails?: boolean; available?: boolean; replyFails?: boolean; publishFails?: boolean; handler?: MessageConversationHandler; outboundTurns?: MessageSyncTurn[]; paired?: boolean } = {}) {
+  const callbacks: { value: unknown; deps: unknown[] }[] = [];
   const states: unknown[] = [], refs: { current: unknown }[] = [];
   const effects: { deps: unknown[]; cleanup?: () => void }[] = [], pending: (() => void)[] = [];
   const timers = new Map<number, () => void>(), listeners = new Map<string, () => void>();
   const deadlines = new Map<number, { fn: () => void; ms: number }>();
-  let si = 0, ri = 0, ei = 0, timerId = 0, dirty = false, mounted = true, tree: Element;
-  let pollCount = 0, replyCount = 0, disconnectCount = 0;
+  let si = 0, ri = 0, ei = 0, ci = 0, timerId = 0, dirty = false, mounted = true, tree: Element;
+  let pollCount = 0, replyCount = 0, disconnectCount = 0, resumeCount = 0, rememberCount = 0, detachCount = 0;
+  const cookie = options.cookie ?? { context: null };
+  const requests: Record<string, unknown>[] = [];
+  let deferredResume = options.resume;
+  let superseded = false;
   let queue: { id: string; applianceId: string; text: string; expiresAt?: number }[] = [];
   let clock = Date.now();
   class ClockDate extends Date { static now() { return clock; } }
@@ -41,6 +46,7 @@ function harness(options: { available?: boolean; replyFails?: boolean; publishFa
   const replies: Record<string, unknown>[] = [], publishes: Record<string, unknown>[] = [], dismissed: string[] = [];
   const deliveries: Record<string, unknown>[] = [];
   const react = {
+    useCallback(value: unknown, deps: unknown[]) { const index = ci++, before = callbacks[index]; if (!before || deps.some((dep, i) => dep !== before.deps[i])) callbacks[index] = { value, deps }; return callbacks[index].value; },
     useState(initial: unknown) { const index = si++; if (!(index in states)) states[index] = initial;
       return [states[index], (next: unknown) => { const value = typeof next === "function" ? next(states[index]) : next; if (!Object.is(value, states[index])) { states[index] = value; dirty = true; } }]; },
     useRef(initial: unknown) { const index = ri++; return refs[index] ?? (refs[index] = { current: initial }); },
@@ -51,10 +57,13 @@ function harness(options: { available?: boolean; replyFails?: boolean; publishFa
   const document = { hidden: false, addEventListener: (name: string, fn: () => void) => listeners.set(name, fn), removeEventListener: (name: string) => listeners.delete(name) };
   const fetcher = async (_url: unknown, init?: RequestInit) => {
     if (init?.method !== "POST") return Response.json({ available: options.available ?? true, message: "Bridge status" });
-    const body = JSON.parse(String(init.body));
+    const body = JSON.parse(String(init.body)); requests.push(body);
+    if (body.action === "resume") { resumeCount++; if (deferredResume) return deferredResume(); if (!cookie.context) return Response.json({ state: "unpaired" }); if (cookie.context !== body.contextKey) return Response.json({ error: "remembered-household-mismatch" }, { status: 409 }); expired = false; return Response.json({ state: "paired", remembered: true, token: "b".repeat(64), code: "", recipient: "housemates@example.com", expiresAt: clock + 7200000 }); }
+    if (body.action === "remember") { rememberCount++; if (options.rememberFails) throw Error("storage unavailable"); cookie.context = body.contextKey; return Response.json({ remembered: true }); }
+    if (body.action === "detach") { detachCount++; return Response.json({ detached: true }); }
     if (body.action === "pair") return Response.json({ token: "a".repeat(64), code: "ABCDE1234567", recipient: "housemates@example.com", expiresAt: clock + 300000 });
-    if (body.action === "disconnect") { disconnectCount++; return Response.json({ disconnected: true }); }
-    if (body.action === "poll") { pollCount++; if (deferredPoll) return deferredPoll(); if (expired) return Response.json({ error: "Pairing expired" }, { status: 401 }); return Response.json({ state: paired ? "paired" : "awaiting-pair", messages: paired ? queue.map(message => "expiresAt" in message ? message : { ...message, expiresAt: clock + 300000 }) : [] }); }
+    if (body.action === "disconnect") { disconnectCount++; cookie.context = null; return Response.json({ disconnected: true }); }
+    if (body.action === "poll") { pollCount++; if (deferredPoll) return deferredPoll(); if (superseded) return Response.json({ error: "session-replaced" }, { status: 409 }); if (expired) return Response.json({ error: "Pairing expired" }, { status: 401 }); return Response.json({ state: paired ? "paired" : "awaiting-pair", messages: paired ? queue.map(message => "expiresAt" in message ? message : { ...message, expiresAt: clock + 300000 }) : [] }); }
     if (body.action === "reply") { replyCount++; replies.push(body); deliveries.push(body); if (deferredReply) return deferredReply(); if (options.replyFails) throw Error("uncertain delivery"); return Response.json({ delivered: true }); }
     if (body.action === "publish") { publishes.push(body); deliveries.push(body); if (deferredPublish) return deferredPublish(); if (options.publishFails) throw Error("uncertain publish delivery"); return Response.json({ delivered: true }); }
     if (body.action === "dismiss") { dismissed.push(body.id); queue = queue.filter(message => message.id !== body.id); return Response.json({ dismissed: true }); }
@@ -66,12 +75,12 @@ function harness(options: { available?: boolean; replyFails?: boolean; publishFa
     require: (name: string) => { if (name === "react") return react; if (name === "react/jsx-runtime") return { jsx, jsxs: jsx }; if (name.endsWith(".css")) return {}; throw Error(name); },
   });
   const Component = (testModule.exports as { MessagesConnection: (props: unknown) => Element }).MessagesConnection;
-  function render() { si = ri = ei = 0; dirty = false; tree = Component({ contextKey: "home-A", applianceIds: ["evie", "bubbles"], outboundTurns, onCommand: (id: "evie" | "bubbles" | "chill", message: string, context: MessageConversationOptions) => { commands.push(message); commandOptions.push(context); return handler ? handler(id, message, context) : "Computed reply"; } }); pending.splice(0).forEach(fn => fn()); }
+  function render() { si = ri = ei = ci = 0; dirty = false; tree = Component({ contextKey: options.contextKey ?? "home-A", applianceIds: ["evie", "bubbles"], outboundTurns, onCommand: (id: "evie" | "bubbles" | "chill", message: string, context: MessageConversationOptions) => { commands.push(message); commandOptions.push(context); return handler ? handler(id, message, context) : "Computed reply"; } }); pending.splice(0).forEach(fn => fn()); }
   async function settle() { for (let i = 0; i < 25; i++) { await Promise.resolve(); if (mounted && dirty) render(); } }
   function button(label: string) { const found = nodes(tree).find(node => node.type === "button" && text(node).includes(label)); assert.ok(found); return found; }
   async function click(label: string) { const node = button(label); assert.notEqual(node.props.disabled, true); await (node.props.onClick as () => Promise<void>)(); await settle(); }
   render();
-  return { settle, click, button, commands, commandOptions, replies, publishes, deliveries, dismissed, document, timers, listeners, text: () => text(tree),
+  return { settle, click, button, cookie, requests, commands, commandOptions, replies, publishes, deliveries, dismissed, document, timers, listeners, text: () => text(tree),
     queue(value: typeof queue) { queue = value; }, defer(fn: (() => Promise<Response>) | null) { deferredPoll = fn; }, deferReply(fn: (() => Promise<Response>) | null) { deferredReply = fn; },
     deferPublish(fn: (() => Promise<Response>) | null) { deferredPublish = fn; },
     timeout: async (maxMs = Infinity) => { [...deadlines.values()].filter(deadline => deadline.ms <= maxMs).forEach(deadline => deadline.fn()); await settle(); },
@@ -81,8 +90,10 @@ function harness(options: { available?: boolean; replyFails?: boolean; publishFa
     handler(fn: MessageConversationHandler) { handler = fn; },
     async outbound(turns: MessageSyncTurn[]) { outboundTurns = turns; render(); await settle(); },
     pairState(value: boolean) { paired = value; },
+    deferResume(fn?: () => Promise<Response>) { deferredResume = fn; },
+    replaceSession() { superseded = true; },
     async visibility(hidden: boolean) { document.hidden = hidden; listeners.get("visibilitychange")?.(); await settle(); },
-    expire() { expired = true; }, counts: () => ({ pollCount, replyCount, disconnectCount }),
+    expire() { expired = true; }, counts: () => ({ pollCount, replyCount, disconnectCount, resumeCount, rememberCount, detachCount }),
     tick: async () => { timers.forEach(fn => fn()); await settle(); },
     unmount: () => { mounted = false; effects.forEach(effect => effect.cleanup?.()); } };
 }
@@ -110,7 +121,7 @@ test("stalled polling fetch and response body time out and later messages still 
     await ui.tick();
     assert.deepEqual(ui.commands, ["Status"]);
     assert.equal(ui.counts().replyCount, 1);
-    assert.match(ui.text(), /PAIRED TO THIS TAB/);
+    assert.match(ui.text(), /PAIRED · REMEMBERED/);
     release(Response.json({ state: "paired", messages: [{ id: "stale", applianceId: "evie", text: "old request" }] }));
     await ui.settle(); assert.deepEqual(ui.commands, ["Status"]);
     ui.unmount();
@@ -141,7 +152,7 @@ test("actual Messages component imports each phone request once even when delive
   assert.equal(ui.counts().disconnectCount, 1); ui.unmount();
 });
 
-test("hidden or unmounted households ignore in-flight messages and revoke the capability", async () => {
+test("hidden or unmounted households ignore in-flight messages and detach without forgetting the phone", async () => {
   const ui = harness(); await ui.settle(); await ui.click("Pair my iPhone");
   let release!: (response: Response) => void;
   const pending = new Promise<Response>(resolve => { release = resolve; }); ui.defer(() => pending);
@@ -149,15 +160,27 @@ test("hidden or unmounted households ignore in-flight messages and revoke the ca
   release(Response.json({ state: "paired", messages: [{ id: "late-1", applianceId: "evie", text: "approve" }] }));
   await tick; assert.deepEqual(ui.commands, []);
   const polls = ui.counts().pollCount; await ui.tick(); assert.equal(ui.counts().pollCount, polls);
-  ui.unmount(); await ui.settle(); assert.equal(ui.timers.size, 0); assert.equal(ui.counts().disconnectCount, 1);
+  ui.unmount(); await ui.settle(); assert.equal(ui.timers.size, 0); assert.equal(ui.counts().disconnectCount, 0); assert.equal(ui.counts().detachCount, 1);
 });
 
-test("expired pairing clears the paired claim and returns to explicit pairing", async () => {
+test("successive genuine short-session expiries restore after healthy polls without requiring another code", async () => {
   const ui = harness(); await ui.settle(); await ui.click("Pair my iPhone");
-  assert.match(ui.text(), /PAIRED TO THIS TAB/);
-  ui.expire(); await ui.tick();
-  assert.doesNotMatch(ui.text(), /PAIRED TO THIS TAB/); assert.match(ui.text(), /Pairing expired/);
-  assert.equal(ui.button("Pair my iPhone").props.disabled, false); assert.equal(ui.timers.size, 0); ui.unmount();
+  assert.match(ui.text(), /PAIRED · REMEMBERED/);
+  for (let episode = 0; episode < 3; episode++) {
+    ui.expire(); await ui.tick(); await ui.settle();
+    assert.match(ui.text(), /PAIRED · REMEMBERED/); assert.equal(ui.counts().resumeCount, episode + 2);
+  }
+  assert.equal(ui.requests.filter(request => request.action === "pair").length, 1);
+  ui.unmount();
+});
+
+test("an immediately rejected replacement session stops recovery without a resume loop", async () => {
+  const ui = harness(); await ui.settle(); await ui.click("Pair my iPhone");
+  ui.deferResume(async () => Response.json({ state: "paired", remembered: true, token: "b".repeat(64), code: "", recipient: "housemates@example.com", expiresAt: ui.now() + 7200000 }));
+  ui.expire(); await ui.tick(); await ui.settle(); await ui.tick();
+  assert.doesNotMatch(ui.text(), /PAIRED · REMEMBERED/); assert.match(ui.text(), /already attempted for this interruption/);
+  assert.equal(ui.button("Pair my iPhone").props.disabled, false); assert.equal(ui.timers.size, 0); assert.equal(ui.counts().resumeCount, 2);
+  ui.unmount();
 });
 
 test("phone turns await the shared AI dispatcher and send its exact reply once", async () => {
@@ -418,4 +441,58 @@ test("uncertain web-turn delivery is not retried and later turns can still publi
   assert.equal(ui.publishes.length, 2);
   assert.deepEqual(ui.publishes.map(turn => turn.id), [first.id, second.id]);
   ui.unmount();
+});
+
+
+test("remembered phone resumes on refresh without another code, storage credential or history replay", async () => {
+  const cookie = { context: null as string | null };
+  const first = harness({ cookie }); await first.settle(); await first.click("Pair my iPhone");
+  assert.equal(first.counts().rememberCount, 1); assert.equal(cookie.context, "home-A");
+  first.unmount(); await first.settle();
+  assert.equal(first.counts().detachCount, 1); assert.equal(first.counts().disconnectCount, 0); assert.equal(cookie.context, "home-A");
+  const second = harness({ cookie, outboundTurns: [webTurn("pre-refresh-history")] }); await second.settle(); await second.tick();
+  assert.match(second.text(), /PAIRED · REMEMBERED/); assert.doesNotMatch(second.text(), /PAIR ABCDE/);
+  assert.equal(second.requests.some(request => request.action === "pair"), false);
+  assert.equal(second.counts().rememberCount, 0); assert.equal(second.publishes.length, 0);
+  assert.deepEqual(second.commands, []); assert.equal(second.requests.find(request => request.action === "resume")?.contextKey, "home-A");
+  assert.doesNotMatch(readFileSync(resolve("src/components/messages-connection.tsx"), "utf8"), /localStorage|sessionStorage/);
+  await second.click("Disconnect Messages"); assert.equal(cookie.context, null);
+  second.unmount(); await second.settle(); assert.equal(second.counts().detachCount, 0);
+});
+
+test("a different household cannot adopt or silently forget a remembered phone", async () => {
+  const cookie = { context: "home-A" };
+  const ui = harness({ cookie, contextKey: "home-B" }); await ui.settle();
+  assert.match(ui.text(), /belongs to another household/); assert.equal(cookie.context, "home-A");
+  assert.equal(ui.timers.size, 0); assert.deepEqual(ui.commands, []);
+  await ui.click("Disconnect remembered phone"); assert.equal(cookie.context, null); assert.equal(ui.counts().disconnectCount, 1); ui.unmount();
+});
+
+test("only phone-proven pairing is remembered, and failed remembering retains temporary local connection", async () => {
+  const waiting = harness({ paired: false }); await waiting.settle(); await waiting.click("Pair my iPhone");
+  assert.equal(waiting.counts().rememberCount, 0); assert.match(waiting.text(), /PAIR ABCDE1234567/);
+  waiting.pairState(true); await waiting.tick(); await waiting.tick();
+  assert.equal(waiting.counts().rememberCount, 1); assert.match(waiting.text(), /PAIRED · REMEMBERED/); waiting.unmount();
+  const failed = harness({ rememberFails: true }); await failed.settle(); await failed.click("Pair my iPhone");
+  assert.match(failed.text(), /remembering this pairing was not confirmed/); assert.match(failed.text(), /PAIRED TO THIS TAB/);
+  await failed.tick(); assert.equal(failed.counts().rememberCount, 1); failed.unmount();
+});
+
+test("replaced tabs stop instead of fighting over remembered pairing", async () => {
+  const ui = harness({ cookie: { context: "home-A" } }); await ui.settle();
+  ui.replaceSession(); await ui.tick(); await ui.tick();
+  assert.match(ui.text(), /LINKED IN ANOTHER TAB/); assert.match(ui.text(), /Automatic reconnect is stopped/);
+  assert.equal(ui.counts().resumeCount, 1); assert.equal(ui.timers.size, 0); assert.deepEqual(ui.commands, []); ui.unmount();
+});
+
+test("late restore cannot attach after unmount, and transient restore failure preserves cookie", async () => {
+  let release!: (value: Response) => void;
+  const pending = new Promise<Response>(resolve => { release = resolve; });
+  const cookie = { context: "home-A" };
+  const ui = harness({ cookie, resume: () => pending }); await ui.settle();
+  assert.match(ui.text(), /RESTORING PHONE LINK/); ui.unmount();
+  release(Response.json({ state: "paired", remembered: true, token: "b".repeat(64), code: "", recipient: "housemates@example.com", expiresAt: ui.now() + 7200000 })); await ui.settle();
+  assert.equal(ui.timers.size, 0); assert.deepEqual(ui.commands, []); assert.equal(ui.counts().disconnectCount, 0); assert.equal(cookie.context, "home-A");
+  const failed = harness({ cookie, resume: async () => { throw Error("offline"); } }); await failed.settle();
+  assert.match(failed.text(), /saved pairing was not removed/); assert.equal(cookie.context, "home-A"); failed.unmount();
 });

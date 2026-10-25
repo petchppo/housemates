@@ -1,3 +1,4 @@
+import * as messageHousehold from "../src/domain/message-household";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -64,6 +65,7 @@ function home(expandedOnly = false) {
         dispatch: (id: ApplianceId, value: string, options: { source?: string }) => Promise.resolve(planner(id, value, options.source ?? "text")),
         outboundTurns: [], invalidate() {},
       }) };
+      if (name === "@/domain/message-household") return messageHousehold;
       if (name === "@/domain/demo") return demo;
       if (name === "@/domain/demo-activity") return activity;
       if (name === "@/domain/simulation") return simulation;

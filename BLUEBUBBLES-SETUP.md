@@ -1,6 +1,6 @@
 # BlueBubbles live setup and verification
 
-Current status: no BlueBubbles server or credentials have been configured for this work. Automated checks use network fixtures. No real message delivery, phone pairing, or provider handshake has been verified. The existing in-app planner remains usable.
+Current local status: the owner configured BlueBubbles. Authenticated connectivity, phone pairing, shared web/phone conversation and physical phone receipt were verified on October 24, 2026. Automated regressions use fixtures; new live model/message tests still require authorization.
 
 The read-only preflight endpoint checks configuration or performs one authenticated ping. It does not install a server, access message history, create pairing, send messages, or start a simulation.
 
@@ -52,7 +52,9 @@ The diagnostic never returns provider URL, addresses, credentials, response bodi
 2. Open `/demo/home` with a completed household and select **Pair my iPhone**. From the configured allowed sender, send the displayed `PAIR …` code to the dedicated bridge identity. Keep the household browser visible. No general message history needs to be read.
 3. Send the dedicated test request `Evie: Find a cheaper plan`. Confirm it appears once in the browser, that its computed result matches the reply, and that the phone actually receives the reply. Record these as separate observations: paired, provider accepted reply, phone received reply. API success alone is not proof of phone delivery.
 4. Send `Evie: approve` and verify no execution starts. Review the current feasible proposal in the browser; only its explicit approval control starts a simulated run. All results remain synthetic/model estimates, never physical-device execution.
-5. Verify disconnect stops further request consumption; refresh requires fresh pairing; hidden tabs defer consumption; stale queued commands expire. Use fixtures for duplicate events and uncertain-send tests rather than replaying real messages. Never retry an ambiguous send automatically.
+5. Verify disconnect stops further request consumption; refresh should restore a remembered pairing automatically; hidden tabs defer consumption; stale queued commands expire. Use fixtures for duplicate events and uncertain-send tests rather than replaying real messages. Never retry an ambiguous send automatically.
 6. Record sanitized evidence and actual failures. If setup is unavailable, retain the unconfigured state and this explicit blocker. Do not mark live transport verified based on fixture tests or authenticated ping alone.
 
 Reference: [BlueBubbles REST and webhooks](https://docs.bluebubbles.app/server/developer-guides/rest-api-and-webhooks). Existing transport/security behavior and process-local queue limitations are documented in [IMESSAGE.md](IMESSAGE.md).
+
+Remembered pairing uses a private HttpOnly browser cookie and ignored, mode-0600 local registry; see IMESSAGE.md. Initial phone proof remains required. Disconnect forgets the phone. Keep the Mac, BlueBubbles, Housemates and the foreground household tab available for replies; remembered authorization is not background AI execution.

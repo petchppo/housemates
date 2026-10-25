@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Private local messaging pairing registry (no transcripts)
+/.housemates/

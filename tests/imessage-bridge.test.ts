@@ -16,6 +16,76 @@ function setup() {
 }
 const request = (body: unknown, token?: string, url = "http://localhost:3000/api/imessage", origin = "http://localhost:3000") => new Request(url, { method: "POST", headers: { "Content-Type": "application/json", Origin: origin, ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(body) });
 
+test("ingress rejection diagnostics identify only fixed validation categories and preserve strict rejection", () => {
+  const logs: unknown[][] = [], previous = console.info;
+  console.info = (...values: unknown[]) => { logs.push(values); };
+  try {
+    const valid = event("private-transcript-marker", "private-guid-marker");
+    const cases: Array<[unknown, string]> = [
+      [null, "invalid-envelope"], [{ ...valid, type: "private-event-marker" }, "event-type"],
+      [{ ...valid, data: null }, "invalid-envelope"],
+      ...([
+        [{ isFromMe: true }, "self-sent"], [{ isFromMe: undefined }, "direction-invalid"],
+        [{ handle: { address: "private-sender@example.com" } }, "sender-mismatch"],
+        [{ guid: "private/invalid-guid" }, "message-id"], [{ text: "" }, "text-or-attachment"],
+        [{ text: "x".repeat(1201) }, "text-or-attachment"], [{ attachments: [{ private: "attachment-marker" }] }, "text-or-attachment"],
+        [{ chats: [{ guid: "iMessage;+;private-group-marker" }] }, "chat-mismatch"],
+        [{ dateCreated: now - 300001 }, "timestamp"], [{ dateCreated: "private-timestamp-marker" }, "timestamp"],
+      ] as Array<[Record<string, unknown>, string]>).map(([change, category]): [unknown, string] => [{ ...valid, data: { ...valid.data, ...change } }, category]),
+    ];
+    for (const [payload, category] of cases) {
+      logs.length = 0;
+      assert.equal(parseBlueBubblesEvent(payload, sender, now), null);
+      assert.equal(logs.length, 0, "Pure parser does not emit duplicate diagnostics");
+      assert.deepEqual(new IMessageBridge(() => now).receive(payload, config), { status: 200, body: { ignored: true } });
+      assert.deepEqual(logs, [[`housemates:imessage-ingress ${JSON.stringify({ category })}`]]);
+    }
+  } finally { console.info = previous; }
+});
+
+test("ingress logs distinguish unmatched pairing, accepted pairing and queued text without identities or capabilities", () => {
+  const logs: unknown[][] = [], previous = console.info;
+  console.info = (...values: unknown[]) => { logs.push(values); };
+  try {
+    const bridge = new IMessageBridge(() => now, () => "a".repeat(64));
+    const pair = bridge.create(config).body as { token: string; code: string };
+    assert.deepEqual(bridge.receive(event("PAIR BBBBBBBBBBBB", "private-unmatched-guid"), config).body, { ignored: true });
+    assert.deepEqual(bridge.receive(event(`PAIR ${pair.code}`, "private-pair-guid"), config).body, { paired: true });
+    assert.deepEqual(bridge.receive(event("Evie: private-conversation-marker", "private-request-guid"), config).body, { queued: true });
+    assert.deepEqual(bridge.receive(event("Evie: private-conversation-marker", "private-request-guid"), config).body, { duplicate: true });
+    assert.deepEqual(new IMessageBridge(() => now).receive(event("private-unpaired-text", "private-unpaired-guid"), config).body, { ignored: true });
+    assert.deepEqual(logs, ["pair-code-unmatched", "paired", "queued", "duplicate", "unpaired-chat"].map(category => [`housemates:imessage-ingress ${JSON.stringify({ category })}`]));
+    const serialized = JSON.stringify(logs);
+    for (const privateValue of [pair.token, pair.code, sender, recipient, config.url, config.password, config.webhookSecret, "BBBBBBBBBBBB", "private-"]) assert.equal(serialized.includes(privateValue), false);
+  } finally { console.info = previous; }
+});
+
+test("webhook authentication and malformed-body diagnostics never log key, URL, origin or body values", async () => {
+  const logs: unknown[][] = [], previous = console.info;
+  console.info = (...values: unknown[]) => { logs.push(values); };
+  try {
+    const endpoint = "http://localhost:3000/api/imessage";
+    const cases: Array<[Request, number, string]> = [
+      [new Request(endpoint, { method: "POST", body: "private-body-marker" }), 403, "webhook-auth-missing"],
+      [request(event("private-body-marker"), undefined, `${endpoint}?key=`), 401, "webhook-auth-missing"],
+      [request(event("private-body-marker"), undefined, `${endpoint}?key=private-wrong-key`), 401, "webhook-auth-invalid"],
+      [request(event("private-body-marker"), undefined, endpoint, "https://private-origin.example"), 403, "request-origin-rejected"],
+      [new Request(`${endpoint}?key=${config.webhookSecret}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "private-invalid-json" }), 400, "invalid-json"],
+      [request({}, undefined, `${endpoint}?key=${config.webhookSecret}`), 200, "event-type"],
+    ];
+    for (const [incoming, status, category] of cases) {
+      logs.length = 0;
+      const response = await handleBridgeRequest(incoming, new IMessageBridge(() => now), config);
+      assert.equal(response.status, status);
+      assert.deepEqual(logs, [[`housemates:imessage-ingress ${JSON.stringify({ category })}`]]);
+    }
+    logs.length = 0;
+    await handleBridgeRequest(new Request(endpoint), new IMessageBridge(), config);
+    await handleBridgeRequest(request({ action: "pair" }), new IMessageBridge(), config);
+    assert.deepEqual(logs, [], "Status checks and ordinary browser pairing do not impersonate webhook ingress");
+  } finally { console.info = previous; }
+});
+
 test("browser pairing uses the requested Host when Next reports an internal bind URL", async () => {
   const pair = (origin: string, host: string, forwarded?: string) => new Request("http://0.0.0.0:3000/api/imessage", {
     method: "POST", headers: { "Content-Type": "application/json", Origin: origin, Host: host, ...(forwarded ? { "X-Forwarded-Host": forwarded } : {}) },
@@ -64,7 +134,8 @@ test("pairing requires phone proof, expires, and re-pairing revokes the previous
   assert.equal(bridge.poll(first.token).body.state, "paired");
   const second = bridge.create(config).body as { token: string; code: string };
   bridge.receive(event(`PAIR ${second.code}`, "pair-second"), config);
-  assert.equal(bridge.poll(first.token).status, 401);
+  assert.equal(bridge.poll(first.token).status, 409);
+  assert.equal(bridge.poll(first.token).body.error, "session-replaced");
   assert.equal(bridge.poll(second.token).body.state, "paired");
   const third = bridge.create(config).body as { token: string; code: string };
   clock += 300001;
@@ -265,7 +336,7 @@ test("web turns mirror exact text once to the proven chat with isolated delivery
   assert.equal((bridge.poll(pair.token).body.diagnostics as { lastReplyOutcome: string }).lastReplyOutcome, "accepted");
   const second = bridge.create(config).body as { token: string; code: string };
   bridge.receive(event(`PAIR ${second.code}`, "second-pair"), config);
-  assert.equal((await bridge.publish(pair.token, turn, config, send)).status, 401);
+  assert.equal((await bridge.publish(pair.token, turn, config, send)).status, 409);
   assert.equal((await bridge.publish(second.token, turn, config, send)).status, 200);
   assert.notEqual(sends[0].id, sends[1].id, "fresh pairing must not collide with an old web turn's delivery ID");
 });

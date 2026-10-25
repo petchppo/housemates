@@ -61,3 +61,12 @@ A real integration defect appeared when new exports were added to an already-loa
 ## Shared iMessage wiring — active user request
 
 Read IMESSAGE-CHAT-HANDOFF.md for the transport-owned contract. This session now also owns new use-household-conversation.ts/tests, controlled ApplianceChat rendering, dashboard dispatch and shared dashboard integration tests. Existing MessagesConnection, message-conversation.ts and bridge files remain transport-owned and untouched. One serialized core conversation will own canonical planner invocation, character history, exact reply and completed outbound turns. Selection preserves histories; household/context/visibility cancellation blocks stale work. No real Messages send or additional paid API test is being performed. Integration checks are pending.
+
+
+## Final live integration evidence
+
+The user later explicitly authorized two additional web-chat API tests and delivery to the paired phone (answer: “do all” to the two-test permission). Both are now consumed; no further tool-paid tests authorized. Both succeeded through the actual home composer: cheaper EV plan/deadline request and follow-up asking why it fits Evie’s personality. The latter returned early-bird/road-trip prose. OpenAI source shown, exact computed facts stay in Details, no run approved. Messages transport accepted web mirrors. User’s own phone planning request appeared as You · iMessage in the same log and received an actual AI reply. User explicitly confirmed both replies arrived on the physical iPhone. Bidirectional live conversation is verified.
+
+Actual pairing initially blocked before app ingress: BlueBubbles had stopped dispatching events despite incoming Mac messages. Fixed-category instrumentation confirmed no event; exact callback/secret ping probes worked. Supported BlueBubbles soft service restart restored event delivery: new user PAIR logged paired and UI shows PAIRED TO THIS TAB. No message database was read by tools and no system privileges changed. Final source checks:473tests, lint, typecheck, productionbuild PASS. No unrelated staging/commit. Source frozen to preserve live pairing.
+
+Final acceptance: user confirmed both mirrored replies arrived. Final actual-AI desktop/mobile screenshots independently viewed and accepted; all473tests/lint/types/build passed. Work complete for shared character-chat wiring and live phone-link repair.
