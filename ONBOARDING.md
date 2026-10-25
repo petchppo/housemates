@@ -1,5 +1,7 @@
 # Housemates guided demo
 
+> Current demo update — October 24, 2026: recruitment now uses a compact character confirmation with synthetic catalog energy/routine presets (`specSource: "demo-defaults"`). No spec sheet, nameplate OCR, numeric entry or routine form is required or offered in this flow. Existing custom settings are preserved, including newer settings saved from another tab. Optional photo category recognition and explicit recruitment confirmation remain. The OCR/form descriptions below document the earlier implementation, not an active demo step.
+
 Entry: **Join the demo** on `/`, or `/demo`. The landing page is a simple scroll-driven world and phone story. Detailed controls and calculated numbers live in the demo. The existing `/household` and `/energy-parliament` remain separate; demo setup never replaces their memory.
 
 ## User pipeline

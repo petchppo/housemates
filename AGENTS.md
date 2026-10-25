@@ -93,3 +93,7 @@ The user's later request explicitly enables actual forecasts, superseding the ol
 Ten catalog categories share confirmed specification passports. Optional local category recognition and nameplate OCR are suggestions; require edited/reviewed inputs before recruitment. Protect AC, refrigeration and water heating; a fixed fan routine earns no shifting savings. Expanded flexible jobs reuse the deterministic engine. Daytime party commands default to Day 1; preserve the original overnight parser convention for legacy callers. Additional-party revisions/execution are session-only; passports persist.
 
 Other user sessions may edit this same workspace. Inspect current files before patches, preserve their UI changes, and do not stage or commit unrelated work. Coordinate by file ownership and rerun integrated checks after concurrent changes.
+
+## Current recruitment simplification
+
+New characters use existing synthetic catalog presets through `createDemoApplimon`, labeled demo-defaults. Do not require spec sheets, OCR or manual electrical/routine entry in recruitment. Keep explicit category/add confirmation, cancellation, protected policies and existing saved settings; re-read latest profile on confirmation so stale cards cannot overwrite custom settings. Optional photo category recognition remains separate and never supplies energy specs.

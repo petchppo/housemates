@@ -138,12 +138,12 @@ test("received scan link is inert until explicit destination confirmation, then 
   const h = scanHarness(undefined, "?appliance=bubbles");
   assert.deepEqual(h.writes, []);
   assert.match(h.text(), /A CATEGORY ARRIVED/);
-  await h.click("Review Bubbles");
+  await h.click("Meet Bubbles");
   assert.equal(h.writes.length,0);
   h.confirm("bubbles");
   assert.deepEqual(h.stored()?.applianceIds, ["evie", "bubbles"]);
   assert.match(h.text(), /joined your saved home/);
-  assert.match(h.text(), /earlier approved simulation must be reviewed again/);
+  assert.match(h.text(), /Review any earlier approved simulation/);
   await h.click("Copy transfer link");
   assert.equal(h.copied(), "https://housemates.example/demo/scan?appliance=bubbles");
   assert.equal(h.writes.length, 1);
@@ -157,7 +157,7 @@ test("scan confirmation merges with latest saved household and duplicate confirm
   assert.deepEqual(h.stored()?.applianceIds, ["evie", "bubbles", "chill"]);
   h.confirm("bubbles");
   assert.equal(h.writes.length, 1);
-  assert.match(h.text(), /No duplicate model or extra energy load/);
+  assert.match(h.text(), /already on this team/);
 });
 
 test("blocked save keeps preview honest and missing household never invents or overwrites setup", () => {
@@ -202,13 +202,45 @@ test("confirmed scan reveal is cosmetic, preserves current household and release
   assert.equal(h.writes.length,1);assert.equal(h.stored()?.applimons?.length,1);
   assert.equal(h.writes.some(value=>value.includes("blob:")||value.includes("washer.png")),false);
   h.confirm("spin",{...catalog.createDemoApplimon("spin"),energyKwh:.8});
-  assert.equal(h.writes.length,2);assert.equal(h.stored()?.applimons?.length,1);assert.equal(h.stored()?.applimons?.[0].energyKwh,.8);
+  assert.equal(h.writes.length,1);assert.equal(h.stored()?.applimons?.length,1);assert.equal(h.stored()?.applimons?.[0].energyKwh,.7);
   assert.equal(h.stored()?.regionId,"bangkok");assert.equal(h.stored()?.planningMode,"carbon");
 });
 
-test("nameplate-only photo reaches confirmed reveal while canceled review clears an appliance photo",()=>{
+test("legacy optional photo reaches reveal while canceling character confirmation clears its local photo",()=>{
   const h=scanHarness();h.confirm("spin",catalog.createDemoApplimon("spin"),{name:"nameplate.png",type:"image/png",size:3000});
   assert.equal(h.revelation()?.props.photoUrl,"blob:scan-1");h.unmount();assert.deepEqual(h.revoked,["blob:scan-1"]);
   const canceled=scanHarness();canceled.photo({name:"washer.png",type:"image/png",size:3000});canceled.begin("spin");canceled.cancelSpecs();
   assert.deepEqual(canceled.revoked,["blob:scan-1"]);assert.equal(canceled.writes.length,0);assert.equal(canceled.revelation(),undefined);
+});
+
+
+test("synthetic recruitment preserves newer saved specifications from another tab", () => {
+  const h = scanHarness();
+  h.begin("spin");
+  const newer: catalog.ApplimonDevice = { ...catalog.createDemoApplimon("spin"), energyKwh: .85, ratedPowerW: 2200, earliestStartHour: 10, specSource: "manual" };
+  h.setStored({ ...household, regionId: "tokyo", applimons: [newer] });
+  h.confirm("spin");
+  assert.deepEqual(h.stored()?.applimons, [newer]);
+  assert.equal(h.stored()?.regionId, "tokyo");
+  assert.equal(h.writes.length, 0, "Already present latest device must not be replaced by the stale confirmation");
+  assert.match(h.text(), /saved settings stay unchanged/);
+});
+
+test("all ten synthetic categories persist valid inputs and repeated recruitment never duplicates load", () => {
+  const h = scanHarness(JSON.stringify({ ...household, applianceIds: [] }));
+  for (const entry of catalog.APPLIMON_CATALOG) {
+    h.confirm(entry.id);
+    const saved = h.stored()?.applimons?.find(device => device.id === entry.id);
+    assert.deepEqual(saved, catalog.createDemoApplimon(entry.id));
+    const writes = h.writes.length;
+    h.confirm(entry.id);
+    assert.equal(h.writes.length, writes);
+  }
+  const saved = h.stored()!;
+  assert.equal(saved.applimons?.length, 10);
+  assert.deepEqual(saved.applianceIds, ["evie", "bubbles", "chill"]);
+  const restored = scanHarness(JSON.stringify(saved));
+  restored.confirm("spin");
+  assert.equal(restored.writes.length, 0);
+  assert.deepEqual(restored.stored(), saved);
 });

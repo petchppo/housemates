@@ -243,7 +243,7 @@ test("completed-home scanning uses saved matching world, while session-only chan
 });
 
 
-test("onboarding photo selection opens reviewed specs for all ten categories without recruiting early", () => {
+test("onboarding photo selection opens synthetic character confirmation without recruiting early", () => {
   const instance = app(); instance.next(); instance.next(); instance.chooseLocation(); instance.next();
   instance.activate(instance.find(element => element.type === "button" && text(element).includes("Add from a photo")));
   const capture = instance.find(element => element.type === Capture);
@@ -325,4 +325,19 @@ test("reselecting updated metadata for the same place refreshes a saved home", (
   const scenario=instance.find(element=>element.type===Dashboard).props.scenario as demo.DemoScenario;
   assert.deepEqual(scenario.profile.weatherLocation,corrected);
   assert.deepEqual(scenario.weather.location,corrected);
+});
+
+
+test("onboarding synthetic recruitment retains an existing custom teammate when selected again", () => {
+  const custom: catalog.ApplimonDevice = { ...catalog.createDemoApplimon("spin"), energyKwh: .8, ratedPowerW: 2200, specSource: "manual" };
+  const instance = app({ startAtHome: true, stored: JSON.stringify({ ...savedProfile, applimons: [custom] }) });
+  (instance.find(element => element.type === Dashboard).props.onEdit as () => void)(); instance.settle();
+  instance.next(); instance.next(); instance.next();
+  instance.activate(instance.find(element => element.type === "button" && text(element).includes("Spin")));
+  const confirmation = instance.find(element => element.type === Specs);
+  assert.deepEqual(confirmation.props.initialDevice, custom);
+  (confirmation.props.onConfirm as (device: catalog.ApplimonDevice) => void)(catalog.createDemoApplimon("spin")); instance.settle();
+  instance.next(); instance.activate(instance.find(element => element.props.id === "demo-enter-home"));
+  const saved = demo.parseDemoProfile(instance.writes.at(-1)!.value)!;
+  assert.deepEqual(saved.applimons, [custom]);
 });

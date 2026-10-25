@@ -1,5 +1,7 @@
 # Appliance photos and reviewed electrical specifications
 
+> Current demo update — October 24, 2026: recruitment now uses a compact character confirmation with synthetic catalog energy/routine presets (`specSource: "demo-defaults"`). No spec sheet, nameplate OCR, numeric entry or routine form is required or offered in this flow. Existing custom settings are preserved, including newer settings saved from another tab. Optional photo category recognition and explicit recruitment confirmation remain. The OCR/form descriptions below document the earlier implementation, not an active demo step.
+
 Housemates offers two separate local assistance steps: SigLIP suggests an appliance category (legacy three-type callers retain CLIP), and optional Tesseract OCR extracts draft nameplate text. Neither establishes a verified identity or measured consumption. The user chooses the category, reviews electrical and scheduling specifications, then explicitly confirms recruitment. Manual entry is always available. Photos map to existing category models, not custom 3D reconstructions.
 
 ## Pipeline and runtime
