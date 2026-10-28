@@ -1,6 +1,8 @@
 # Public demo deployment
 
-Housemates is prepared for Vercel's Next.js runtime, with GitHub checks and automatic deployments through the Vercel Git integration. Configuration in Git does not itself connect an account or create a live deployment. Record the verified production URL and deployed commit only after the owner completes that connection and tests the resulting site.
+Public demo: **[housemates-xi.vercel.app](https://housemates-xi.vercel.app)**. Direct setup: [Start the demo](https://housemates-xi.vercel.app/demo).
+
+The first production deployment was verified Ready on October 28, 2026 for application commit `d123e77f6a9404dd32bb3bb99b7192c72ba41551`. Vercel is connected to this GitHub repository and automatically deploys pushes to `codex/housemates-mvp`; that push actually triggered the verified production build. Launch uses local character replies, with live AI deferred by the owner, and an iMessage beta feature preview. See PROGRESS.md for checks and limitations.
 
 ## Repository and runtime
 
@@ -55,11 +57,11 @@ The public iMessage panel is a beta preview. Do not configure the private Mac br
 
 Actual weather uses the existing server adapter and a labeled synthetic fallback. Rates and carbon remain authored synthetic data. Optional photo recognition downloads its local browser model only after an explicit action; photos and household browser storage are not uploaded by the deployment configuration. A different origin has its own browser household memory, so a localhost profile does not automatically appear on the public URL.
 
-## Reproducibility evidence and remaining acceptance
+## Reproducibility evidence and release checklist
 
-During the October 27–28, 2026 deployment preparation, public npm registry checks confirmed `next@16.4.3`, `react@19.3.0`, `react-dom@19.3.0` and `eslint-config-next@16.4.3` exist. An isolated clean install of the committed lockfile succeeded on macOS with Node `24.22.1` and npm `11.19.1`; the active development installation was untouched. npm reported an existing ESLint deprecation and install-script approval notices for four transitive packages. These were not silently bypassed and no dependencies were upgraded. A Linux CI/Vercel result is still required; local installation alone is not evidence of a successful deployment. The copied source snapshot passed lint, TypeScript, 553 tests (including a repeat with `VERCEL=1`) and a production build using the freshly installed packages. The restricted build stalled; only that isolated process was stopped, and the retry with local worker access passed. The healthy development server was not stopped. This snapshot preceded the final public-quota changes; the lead must run the combined final gates.
+During the October 27–28, 2026 deployment preparation, public npm registry checks confirmed `next@16.4.3`, `react@19.3.0`, `react-dom@19.3.0` and `eslint-config-next@16.4.3` exist. An isolated clean install of the committed lockfile succeeded on macOS with Node `24.22.1` and npm `11.19.1`; the active development installation was untouched. npm reported an existing ESLint deprecation and install-script approval notices for four transitive packages. These were not silently bypassed and no dependencies were upgraded. At that preparation stage, Linux CI/Vercel results were still pending; local installation alone was not evidence of a successful deployment. The copied source snapshot passed lint, TypeScript, 553 tests (including a repeat with `VERCEL=1`) and a production build using the freshly installed packages. The restricted build stalled; only that isolated process was stopped, and the retry with local worker access passed. The healthy development server was not stopped. This snapshot preceded the final public-quota changes. The final application commit subsequently passed all combined gates with 565 tests locally, on GitHub Ubuntu/Node24, and in Vercel’s Ready production deployment.
 
-Before announcing the production URL, verify:
+For subsequent releases, verify:
 
 - Deployment is Ready for the intended commit and branch, with successful install, lint, typecheck, tests and build logs.
 - `/`, `/demo`, `/demo/home`, `/judge-demo`, `/household` and `/energy-parliament` load on the public origin. Test keyboard navigation, desktop and phone layout.
