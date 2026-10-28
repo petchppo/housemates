@@ -3,6 +3,7 @@ import { parseCharacterReply, parseCharacterDialogueRequest, type CharacterReply
 import { readDialogueConfig, type DialogueConfig } from "./dialogue-provider";
 import { DialogueFailure, readJson, upstreamFailureCode } from "./dialogue-transport";
 import { isSameOrigin } from "./request-origin";
+import { publicAiAvailable, reservePublicAiQuota, type PublicAiQuotaOptions } from "./public-ai-quota";
 
 const TIMEOUT_MS = 20_000;
 const REQUEST_BYTES = 49_152;
@@ -43,12 +44,15 @@ function extractReply(output: unknown): string {
 }
 
 /** Conversation-only endpoint. It has no planner state, approval callback or device tools. */
-export async function handleCharacterDialogueRequest(request: Request, config: DialogueConfig | null, fetcher: typeof fetch = fetch, timeoutMs = TIMEOUT_MS): Promise<Response> {
+export async function handleCharacterDialogueRequest(request: Request, config: DialogueConfig | null, fetcher: typeof fetch = fetch, timeoutMs = TIMEOUT_MS, quotaOptions: PublicAiQuotaOptions = {}): Promise<Response> {
+  const quota = { ...quotaOptions, fetcher: quotaOptions.fetcher ?? fetcher };
+  const available = publicAiAvailable(quota.env ?? {});
   const settings = config?.provider === "openai" ? readDialogueConfig({ HOUSEMATES_DIALOGUE_PROVIDER: "openai", OPENAI_API_KEY: config.apiKey, HOUSEMATES_DIALOGUE_OPENAI_MODEL: config.model }) : null;
-  if (request.method === "GET") return respond(200, { status: settings ? "configured" : "unconfigured" });
+  if (request.method === "GET") return respond(200, { status: settings && available ? "configured" : "unconfigured" });
   if (request.method !== "POST") return respond(405, { error: "method-not-allowed" });
   if (!isSameOrigin(request)) return respond(403, { error: "same-origin-required" });
   if (!settings || settings.provider !== "openai") return respond(503, { error: "unconfigured" });
+  if (!available) return respond(503, { error: "public-ai-unavailable" });
   if (request.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase() !== "application/json") return respond(415, { error: "json-required" });
   if (activeRequests >= 2) return respond(429, { error: "assistant-busy" });
   activeRequests++;
@@ -74,6 +78,9 @@ The deterministic plannerReply is the sole supplied planning evidence and is dis
 You provide conversation only. You cannot approve plans, execute commands, use tools or operate appliances. Never say a device has started, stopped, connected, finished, changed settings or been controlled; never say a plan has been approved. Avoid action/status claims even when a simulated plan exists. Do not promise or claim actual or measured savings, telemetry, comfort, food safety or verified device state. You may discuss tradeoffs qualitatively and encourage reviewing the planner and using explicit controls.
 For a device-control request, give a direct friendly refusal without repeating quoted commands: "I can't turn off the AC. Comfort deserves care, so let's keep planning within the protected boundaries." For a cheaper-plan request with a deadline, acknowledge the goal qualitatively: "I'm happy to help you compare a thriftier plan. Please review the planner's timing and constraints before choosing." Keep your character voice, but do not echo the user's numeric deadline or restate completion or approval as a fact. Avoid ordinal transitions and quoted action words when unnecessary.
 Do not request photos, audio, private account settings, keys or household records. Do not output URLs, markup, code or tool calls. Return only the required JSON object with the reply string.`;
+      const reservation = await reservePublicAiQuota(request, quota, abort.signal);
+      if (!reservation.ok) return respond(reservation.status, { error: reservation.error });
+      if (abort.signal.aborted) throw new DialogueFailure(504, "provider-timeout");
       attempted = true;
       const response = await fetcher("https://api.openai.com/v1/responses", {
         method: "POST", redirect: "error", signal: abort.signal,

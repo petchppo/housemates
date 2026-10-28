@@ -108,3 +108,13 @@ test("configuration timeout resolves local mode even if fetch ignores abort",asy
   const h=harness();h.render();h.fireTimers();assert.equal(h.render().status,"unconfigured");
   h.requests[0].resolve(Response.json({status:"configured"}));await flush();assert.equal(h.render().status,"unconfigured");h.unmount();
 });
+
+test("public AI allowance errors retain local fallback and never retry", async()=>{
+  for (const error of ["public-ai-limit","public-ai-burst-limit","public-ai-unavailable"]) {
+    const h=harness();await h.configure();
+    const pending=h.render().request("hello","local planner facts");
+    h.requests.at(-1)!.resolve(Response.json({error},{status:error==="public-ai-unavailable"?503:429}));await pending;
+    assert.match(h.render().notice,/Local planning still works|local planning still works/);
+    assert.equal(h.render().reply,null);assert.equal(h.requests.length,2);h.unmount();
+  }
+});

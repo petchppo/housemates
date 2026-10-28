@@ -290,3 +290,15 @@ test("casual words mixed with constraints, approvals or device requests preserve
   assert.equal(h.plannerCalls.length, requests.length); assert.equal(h.requests.length, requests.length + 1);
   h.unmount();
 });
+
+test("public quota errors preserve the exact local reply without another paid attempt", async()=>{
+  for (const error of ["public-ai-limit","public-ai-burst-limit","public-ai-unavailable"]) {
+    const h=harness(), controller=await h.configure();
+    const pending=controller.dispatch("evie","Find a cheaper plan",web);
+    h.requests[1].resolve(Response.json({error},{status:error==="public-ai-unavailable"?503:429}));
+    const reply=await pending;
+    assert.equal(reply?.source,"local");assert.equal(reply?.text,"Local validated facts: 12.00 kWh; approval is explicit.");
+    assert.match(h.render().forCharacter("evie").notice,/Local planning still works|local planning still works/);
+    assert.equal(h.plannerCalls.length,1);assert.equal(h.requests.length,2);h.unmount();
+  }
+});

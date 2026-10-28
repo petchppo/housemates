@@ -27,7 +27,7 @@ function text(value: unknown): string {
   if (Array.isArray(value)) return value.map(text).join(" ");
   return value && typeof value === "object" && "props" in value ? text((value as Element).props.children) : "";
 }
-function harness() {
+function harness(publicDemo = false) {
   const states: unknown[] = [], refs: { current: unknown }[] = [];
   const memos: { deps: unknown[]; value: unknown }[] = [], effects: { deps: unknown[]; cleanup?: () => void }[] = [], pending: (() => void)[] = [];
   const timers = new Map<number, () => void>();
@@ -59,8 +59,8 @@ function harness() {
     fetch: (url: string, init: RequestInit) => new Promise<Response>((resolve, reject) => requests.push({ url, init, resolve, reject })),
     require: (name: string) => { if (name.endsWith(".css")) return {}; if (name in modules) return modules[name]; throw Error(name); },
   });
-  const Component = (fixtureModule.exports as { JudgeDemo: () => Element }).JudgeDemo;
-  function render() { si = ri = mi = ei = 0; tree = Component(); pending.splice(0).forEach(fn => fn()); }
+  const Component = (fixtureModule.exports as { JudgeDemo: (props: { publicDemo: boolean }) => Element }).JudgeDemo;
+  function render() { si = ri = mi = ei = 0; tree = Component({ publicDemo }); pending.splice(0).forEach(fn => fn()); }
   function button(label: string) { const value = nodes(tree).find(node => node.type === "button" && text(node) === label); assert.ok(value, `Missing button: ${label}`); return value; }
   function click(label: string) { const node = button(label); assert.notEqual(node.props.disabled, true); (node.props.onClick as () => void)(); render(); }
   function graph() { const chart = nodes(tree).find(node => node.type === "chart"); assert.ok(chart); return chart.props as unknown as ChartProps; }
@@ -163,4 +163,13 @@ test("judge discloses optional OpenAI text processing before an explicit request
   assert.equal(h.button("Approve current proposal").props.disabled, false);
   assert.equal(h.button("Advance simulation 1 hour").props.disabled, true);
   assert.equal(h.assistantRequests.length, 1); h.unmount();
+});
+
+
+test("public judge shows iMessage beta without bridge actions or network requests", () => {
+  const h = harness(true);
+  assert.match(h.text(), /Public phone pairing is not available/);
+  assert.equal(h.elements().some(node => node.type === "button" && /Check bridge reachability/.test(text(node))), false);
+  assert.equal(h.requests.length, 0);
+  h.unmount();
 });

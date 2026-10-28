@@ -1,4 +1,5 @@
 import * as dialogueTransport from "../src/server/dialogue-transport";
+import * as publicAiQuota from "../src/server/public-ai-quota";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
@@ -419,6 +420,7 @@ test("actual provider deadlines give OpenAI twenty seconds and Ollama eight, and
       if (name === "../domain/dialogue-contract") return dialogueContract;
       if (name === "./request-origin") return { isSameOrigin };
       if (name === "./dialogue-transport") return dialogueTransport;
+      if (name === "./public-ai-quota") return publicAiQuota;
       throw new Error(name);
     },
   });

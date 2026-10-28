@@ -17,3 +17,10 @@
 .hm-messages-pair p { margin:0 0 10px; }
 .hm-messages-pair code { display:block; padding:12px; margin:10px 0; background:#eee8f4; border-radius:8px; font-size:15px; white-space:normal; }
 @media(max-width:480px) { .hm-messages-connect { padding:20px 16px; } }
+.hm-messages-beta .hm-messages-badge { border-radius:2px; border:2px solid #6c8151; background:#e7edda; color:#33462c; box-shadow:3px 3px 0 #c8d2af; }
+.hm-messages-connect .hm-messages-beta-features { list-style:none; counter-reset:beta-feature; padding:0; margin:20px 0; }
+.hm-messages-beta-features li { counter-increment:beta-feature; display:grid; grid-template-columns:30px minmax(0,1fr); column-gap:12px; padding:14px 0; border-top:1px solid #c8d2af; }
+.hm-messages-beta-features li::before { content:counter(beta-feature); grid-row:1/3; align-self:start; text-align:center; padding:5px 0; border:2px solid #6c8151; background:#e7edda; color:#33462c; font:700 12px/1.4 "Courier New",monospace; }
+.hm-messages-beta-features strong { font-size:13px; line-height:1.5; }
+.hm-messages-beta-features span { margin-top:4px; font-size:12px; line-height:1.65; }
+.hm-messages-beta-boundary { padding:12px; border:1px solid #c8d2af; background:#edf0df; }

@@ -156,6 +156,7 @@ test("late OpenAI responses cannot cross reset, timeout or appliance-context bou
 
 test("provider failures show only authored diagnostics and never retry or create a suggestion", async () => {
   const cases: [string, RegExp][] = [
+    ["public-ai-limit", /allowance is used up/], ["public-ai-burst-limit", /Try later/], ["public-ai-unavailable", /Local planning still works/],
     ["provider-authentication", /credentials/], ["provider-access-denied", /permissions/],
     ["provider-quota", /quota/], ["provider-rate-limit", /rate limit/],
     ["provider-credit-balance", /prepaid credits/], ["provider-spend-limit", /spending limit/],

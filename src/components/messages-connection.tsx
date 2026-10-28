@@ -9,7 +9,7 @@ type Props = { contextKey: string; applianceIds: readonly ApplianceId[]; onComma
 type Pairing = { token: string; code: string; recipient: string; expiresAt: number };
 type Diagnostics = { lastInboundAt: number | null; lastInboundOutcome: "queued" | "unsupported-command" | null; lastReplyAt: number | null; lastReplyOutcome: "accepted" | "unconfirmed" | null; pendingCount: number };
 class BridgeClientError extends Error { constructor(message: string, readonly status: number) { super(message); } }
-type ApiResult = { available?: boolean; message?: string; error?: string; token?: string; code?: string; recipient?: string; expiresAt?: number; state?: string; remembered?: boolean; diagnostics?: Diagnostics; messages?: Array<{ id: string; applianceId: ApplianceId; text: string; expiresAt: number }> };
+type ApiResult = { status?: string; available?: boolean; message?: string; error?: string; token?: string; code?: string; recipient?: string; expiresAt?: number; state?: string; remembered?: boolean; diagnostics?: Diagnostics; messages?: Array<{ id: string; applianceId: ApplianceId; text: string; expiresAt: number }> };
 
 async function api(action: string, capability?: string, extra: Record<string, string> = {}, signal?: AbortSignal) {
     const controller = new AbortController();
@@ -47,6 +47,7 @@ export function MessagesConnection({ contextKey, ...props }: Props) { return <Me
 
 function MessagesSession({ contextKey, applianceIds, onCommand, outboundTurns }: Props) {
   const [available, setAvailable] = useState<boolean | null>(null);
+  const [beta, setBeta] = useState(false);
   const [pairing, setPairing] = useState<Pairing | null>(null);
   const [paired, setPaired] = useState(false);
   const [remembered, setRemembered] = useState(false);
@@ -146,7 +147,9 @@ function MessagesSession({ contextKey, applianceIds, onCommand, outboundTurns }:
         const response = await fetch("/api/imessage", { cache: "no-store", signal: abort.signal });
         const data = await response.json() as ApiResult;
         if (abort.signal.aborted || epoch !== generation.current) return;
-        const configured = response.ok && data.available === true;
+        const isBeta = data.status === "beta";
+        setBeta(isBeta);
+        const configured = response.ok && data.available === true && !isBeta;
         setAvailable(configured);
         setNotice(data.message ?? "Messaging bridge is unavailable. In-app chat still works.");
         if (configured) await restore(abort.signal, epoch);
@@ -336,12 +339,25 @@ function MessagesSession({ contextKey, applianceIds, onCommand, outboundTurns }:
     try { await api("disconnect", old ?? undefined); if (epoch === generation.current) setNotice("Disconnected and forgot the remembered phone pairing. In-app chat remains available."); } catch { if (epoch === generation.current) { setRestoreBlocked("household"); setNotice("This tab stopped processing messages, but forgetting the saved pairing was not confirmed. Use Disconnect remembered phone to retry before refreshing."); } }
   }
 
+  if (beta) return <section className="hm-messages-connect hm-messages-beta" aria-labelledby="hm-messages-title">
+    <p className="hm-messages-kicker">TAKE YOUR TEAM WITH YOU</p>
+    <h2 id="hm-messages-title">Your applimon, in Messages.</h2>
+    <span className="hm-messages-badge">BETA · FEATURE PREVIEW</span>
+    <p className="hm-messages-notice" role="status">Phone pairing is not available on this public demo. Your household chat still works here.</p>
+    <ol className="hm-messages-beta-features">
+      <li><strong>One shared conversation</strong><span>Text naturally and continue with the same teammate on your phone and the website.</span></li>
+      <li><strong>A remembered phone link</strong><span>In a privately configured local installation, pair once and reconnect on your next visit.</span></li>
+      <li><strong>You stay in charge</strong><span>Review proposals in the household. A text never approves a plan or starts a task.</span></li>
+    </ol>
+    <p className="hm-messages-beta-boundary">This preview does not receive or send iMessages. The local beta needs a configured Mac bridge and an open household tab; no real devices are controlled.</p>
+  </section>;
+
   return <section className="hm-messages-connect" aria-labelledby="hm-messages-title">
     <div><p className="hm-messages-kicker">TAKE YOUR TEAM WITH YOU</p><h2 id="hm-messages-title">Your applimon, in Messages.</h2><p>One conversation on the website and your phone. AI uses the web chat’s persona and recent context; your open household stays in charge of every approval.</p><p>Pairing enables phone text and new website turns to use this shared conversation. When AI is configured, text, planner details and recent chat go to OpenAI; API charges may apply. No photos or audio are sent to the model.</p></div>
     <span className={`hm-messages-badge${paired && !connectionError ? " is-paired" : ""}`}>{restoring ? "RESTORING PHONE LINK" : restoreBlocked === "elsewhere" ? "LINKED IN ANOTHER TAB" : connectionError && pairing ? "CONNECTION INTERRUPTED · RETRYING" : paired ? remembered ? "PAIRED · REMEMBERED" : "PAIRED TO THIS TAB" : available ? "READY TO PAIR" : "NOT CONNECTED"}</span>
     <p className="hm-messages-notice" role="status">{notice}</p>
     {paired && diagnostics && <p className="hm-messages-diagnostics">{diagnostics.lastInboundAt === null ? "No phone request received in this pairing yet." : `Last verified phone request: ${new Date(diagnostics.lastInboundAt).toLocaleTimeString()}. ${diagnostics.lastInboundOutcome === "unsupported-command" ? "That teammate is not available in Messages. Keep chatting normally, or say hi to Evie, Bubbles or Chill." : "Request queued for this household."}`} {diagnostics.lastReplyAt !== null && `Last reply: ${new Date(diagnostics.lastReplyAt).toLocaleTimeString()} — ${diagnostics.lastReplyOutcome === "accepted" ? "accepted by BlueBubbles; phone receipt not confirmed" : "delivery unconfirmed"}.`} {diagnostics.pendingCount > 0 && `${diagnostics.pendingCount} waiting.`}</p>}
-    {pairing ? <><div className="hm-messages-pair"><p>{paired ? "Phone connected. Just text naturally, for example:" : <>In Messages, send to <strong>{pairing.recipient}</strong>:</>}</p><code>{paired ? "Find a cheaper plan" : `PAIR ${pairing.code}`}</code>{paired ? <p>No name or special format needed. You can say hi, laugh, ask a question or talk about your plan.</p> : <p>Use the phone configured by your bridge administrator. A code alone does not grant access from another sender.</p>}</div><button type="button" onClick={disconnect}>Disconnect Messages</button></> : <button type="button" disabled={!available || busy} onClick={pair}>{restoring ? "Restoring phone connection…" : busy ? "Creating pairing code…" : "Pair my iPhone"}</button>}
+    {pairing ? <><div className="hm-messages-pair"><p>{paired ? "Phone connected. Just text naturally, for example:" : <>In Messages, send to <strong>{pairing.recipient}</strong>:</>}</p><code>{paired ? "Find a cheaper plan" : `PAIR ${pairing.code}`}</code>{paired ? <p>No name or special format needed. You can say hi, laugh, ask a question or talk about your plan.</p> : <p>Use the phone configured by your bridge administrator. A code alone does not grant access from another sender.</p>}</div><button type="button" onClick={disconnect}>Disconnect Messages</button></> : available === null ? null : <button type="button" disabled={!available || busy} onClick={pair}>{restoring ? "Restoring phone connection…" : busy ? "Creating pairing code…" : "Pair my iPhone"}</button>}
     {restoreBlocked && !pairing && <button type="button" onClick={disconnect}>Disconnect remembered phone</button>}
     <details><summary>How this connection works</summary><ol><li>Configure a BlueBubbles server on a Mac and one allowed iMessage sender. No bridge account is currently provided by Housemates.</li><li>Pair this browser with your phone using the code. The remembered pairing reconnects after refresh; keep a household tab open and visible for replies.</li><li>Just text normally. A new or restored session starts with Evie; follow-ups stay with the current teammate. To switch, try <code>Hey Bubbles, how are you?</code> or <code>Chill: hi</code>. Names are optional for ordinary messages. Replies use the same web conversation.</li><li>Review and approve proposals here. Sending “approve” in Messages never starts a task.</li></ol><p>Text travels through Apple, your Mac bridge and this app server. The mailbox is temporary; unprocessed requests expire after five minutes. A protected browser cookie remembers this phone for this household. Refreshing or restarting the app server can restore it automatically; a different household never attaches silently. Disconnect forgets the pairing. No replies are generated while the browser is closed or offline. Reopen the household and send a new request; old requests are not replayed. New website turns also sync while paired; earlier history is not replayed. No photos, attachments, group chats or automatic background execution.</p></details>
   </section>;

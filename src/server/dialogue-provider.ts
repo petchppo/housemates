@@ -1,6 +1,7 @@
 import { DialogueFailure, readJson, upstreamFailureCode } from "./dialogue-transport";
 import { assessDialogueRequest, parseDialogueSuggestion, suggestionMatchesRequest } from "../domain/dialogue-contract";
 import { isSameOrigin } from "./request-origin";
+import { publicAiAvailable, reservePublicAiQuota, type PublicAiQuotaOptions } from "./public-ai-quota";
 
 export type DialogueConfig =
   | { provider?: "ollama"; baseUrl: string; model: string }
@@ -91,11 +92,14 @@ function parseProviderOutput(output: unknown, provider: "openai" | "ollama"): un
 
 /** Pure HTTP adapter with injectable transport; default-off requests never contact a provider.
  * timeoutMs is a server/test option, never an accepted browser field. */
-export async function handleDialogueRequest(request: Request, config: DialogueConfig | null, fetcher: Fetcher = fetch, timeoutMs?: number): Promise<Response> {
-  if (request.method === "GET") return respond(200, { status: config ? "configured" : "unconfigured" });
+export async function handleDialogueRequest(request: Request, config: DialogueConfig | null, fetcher: Fetcher = fetch, timeoutMs?: number, quotaOptions: PublicAiQuotaOptions = {}): Promise<Response> {
+  const quota = { ...quotaOptions, fetcher: quotaOptions.fetcher ?? fetcher };
+  const available = publicAiAvailable(quota.env ?? {});
+  if (request.method === "GET") return respond(200, { status: config && available ? "configured" : "unconfigured" });
   if (request.method !== "POST") return respond(405, { error: "method-not-allowed" });
   if (!isSameOrigin(request)) return respond(403, { error: "same-origin-required" });
   if (!config) return respond(503, { error: "unconfigured" });
+  if (!available) return respond(503, { error: "public-ai-unavailable" });
   if (request.headers.get("content-type")?.split(";", 1)[0].trim().toLowerCase() !== "application/json") return respond(415, { error: "json-required" });
   if (activeRequests >= 2) return respond(429, { error: "assistant-busy" });
   // Validate injected configuration too; only the fixed OpenAI endpoint or numeric loopback may be called.
@@ -138,6 +142,9 @@ export async function handleDialogueRequest(request: Request, config: DialogueCo
           { role: "user", content: text },
         ],
       };
+      const reservation = await reservePublicAiQuota(request, quota, controller.signal);
+      if (!reservation.ok) return respond(reservation.status, { error: reservation.error });
+      if (controller.signal.aborted) throw new DialogueFailure(504, "provider-timeout");
       attemptedProvider = true;
       const response = await fetcher(endpoint, {
         method: "POST", redirect: "error", signal: controller.signal,

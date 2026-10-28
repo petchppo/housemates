@@ -6,6 +6,9 @@ import { parseDialogueSuggestion, type DialogueSuggestion } from "@/domain/dialo
 type Reply = { context: string; suggestion: DialogueSuggestion | null; message: string; loading: boolean };
 const empty = (context: string): Reply => ({ context, suggestion: null, message: "", loading: false });
 const failureMessages: Record<string, string> = {
+  "public-ai-limit": "Today’s AI demo allowance is used up. Local planning still works.",
+  "public-ai-burst-limit": "AI demo limit reached. Try later; local planning still works.",
+  "public-ai-unavailable": "AI replies are temporarily unavailable. Local planning still works.",
   unconfigured: "Optional AI is unconfigured or unavailable. Use the local planner; no model reply was generated.",
   "provider-authentication": "The AI provider rejected the API credentials. Check the server API key.",
   "provider-access-denied": "The AI provider denied access. Check the API key and project permissions.",

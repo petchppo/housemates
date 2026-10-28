@@ -8,6 +8,9 @@ type Status = "checking" | "configured" | "unconfigured";
 type Conversation = { scope: string; reply: string | null; loading: boolean; notice: string; history: CharacterDialogueTurn[] };
 const empty = (scope: string): Conversation => ({ scope, reply: null, loading: false, notice: "", history: [] });
 const failures: Record<string, string> = {
+  "public-ai-limit": "Today’s AI demo allowance is used up. Local planning still works.",
+  "public-ai-burst-limit": "AI demo limit reached. Try later; local planning still works.",
+  "public-ai-unavailable": "AI replies are temporarily unavailable. Local planning still works.",
   "provider-credit-balance": "AI dialogue needs available API credits. Showing the local planner reply.",
   "provider-spend-limit": "The API spending limit was reached. Showing the local planner reply.",
   "provider-usage-limit": "The API usage limit was reached. Showing the local planner reply.",

@@ -4,8 +4,10 @@ import { readDialogueConfig } from "../../../server/dialogue-provider";
 
 export async function GET(request: Request) {
   await connection();
-  return handleCharacterDialogueRequest(request, readDialogueConfig(process.env));
+  const env = process.env;
+  return handleCharacterDialogueRequest(request, readDialogueConfig(env), undefined, undefined, { env });
 }
 export function POST(request: Request) {
-  return handleCharacterDialogueRequest(request, readDialogueConfig(process.env));
+  const env = process.env;
+  return handleCharacterDialogueRequest(request, readDialogueConfig(env), undefined, undefined, { env });
 }

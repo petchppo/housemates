@@ -19,7 +19,7 @@ function text(value: unknown): string {
   if (Array.isArray(value)) return value.map(text).join(" ");
   return value && typeof value === "object" && "props" in value ? text((value as Element).props.children) : "";
 }
-function harness(options: { cookie?: { context: string | null }; contextKey?: string; resume?: () => Promise<Response>; rememberFails?: boolean; available?: boolean; replyFails?: boolean; publishFails?: boolean; handler?: MessageConversationHandler; outboundTurns?: MessageSyncTurn[]; paired?: boolean } = {}) {
+function harness(options: { beta?: boolean; cookie?: { context: string | null }; contextKey?: string; resume?: () => Promise<Response>; rememberFails?: boolean; available?: boolean; replyFails?: boolean; publishFails?: boolean; handler?: MessageConversationHandler; outboundTurns?: MessageSyncTurn[]; paired?: boolean } = {}) {
   const callbacks: { value: unknown; deps: unknown[] }[] = [];
   const states: unknown[] = [], refs: { current: unknown }[] = [];
   const effects: { deps: unknown[]; cleanup?: () => void }[] = [], pending: (() => void)[] = [];
@@ -56,7 +56,7 @@ function harness(options: { cookie?: { context: string | null }; contextKey?: st
   };
   const document = { hidden: false, addEventListener: (name: string, fn: () => void) => listeners.set(name, fn), removeEventListener: (name: string) => listeners.delete(name) };
   const fetcher = async (_url: unknown, init?: RequestInit) => {
-    if (init?.method !== "POST") return Response.json({ available: options.available ?? true, message: "Bridge status" });
+    if (init?.method !== "POST") return Response.json({ available: options.available ?? true, message: "Bridge status", ...(options.beta ? { status: "beta" } : {}) });
     const body = JSON.parse(String(init.body)); requests.push(body);
     if (body.action === "resume") { resumeCount++; if (deferredResume) return deferredResume(); if (!cookie.context) return Response.json({ state: "unpaired" }); if (cookie.context !== body.contextKey) return Response.json({ error: "remembered-household-mismatch" }, { status: 409 }); expired = false; return Response.json({ state: "paired", remembered: true, token: "b".repeat(64), code: "", recipient: "housemates@example.com", expiresAt: clock + 7200000 }); }
     if (body.action === "remember") { rememberCount++; if (options.rememberFails) throw Error("storage unavailable"); cookie.context = body.contextKey; return Response.json({ remembered: true }); }
@@ -80,7 +80,7 @@ function harness(options: { cookie?: { context: string | null }; contextKey?: st
   function button(label: string) { const found = nodes(tree).find(node => node.type === "button" && text(node).includes(label)); assert.ok(found); return found; }
   async function click(label: string) { const node = button(label); assert.notEqual(node.props.disabled, true); await (node.props.onClick as () => Promise<void>)(); await settle(); }
   render();
-  return { settle, click, button, cookie, requests, commands, commandOptions, replies, publishes, deliveries, dismissed, document, timers, listeners, text: () => text(tree),
+  return { settle, click, button, cookie, requests, commands, commandOptions, replies, publishes, deliveries, dismissed, document, timers, listeners, text: () => text(tree), buttons: () => nodes(tree).filter(node => node.type === "button"),
     queue(value: typeof queue) { queue = value; }, defer(fn: (() => Promise<Response>) | null) { deferredPoll = fn; }, deferReply(fn: (() => Promise<Response>) | null) { deferredReply = fn; },
     deferPublish(fn: (() => Promise<Response>) | null) { deferredPublish = fn; },
     timeout: async (maxMs = Infinity) => { [...deadlines.values()].filter(deadline => deadline.ms <= maxMs).forEach(deadline => deadline.fn()); await settle(); },
@@ -476,6 +476,23 @@ test("only phone-proven pairing is remembered, and failed remembering retains te
   const failed = harness({ rememberFails: true }); await failed.settle(); await failed.click("Pair my iPhone");
   assert.match(failed.text(), /remembering this pairing was not confirmed/); assert.match(failed.text(), /PAIRED TO THIS TAB/);
   await failed.tick(); assert.equal(failed.counts().rememberCount, 1); failed.unmount();
+});
+
+test("public beta feature preview has no connection controls or hidden restore, polling or sends", async () => {
+  const cookie = { context: "home-A" };
+  const ui = harness({ beta: true, available: true, cookie });
+  assert.equal(ui.buttons().length, 0, "No misleading pairing control before status arrives");
+  await ui.settle();
+  assert.match(ui.text(), /BETA · FEATURE PREVIEW/);
+  assert.match(ui.text(), /does not receive or send iMessages/);
+  assert.match(ui.text(), /privately configured local installation/);
+  assert.equal(ui.buttons().length, 0);
+  assert.doesNotMatch(ui.text(), /READY TO PAIR|PAIRED|Pair my iPhone|Disconnect Messages/);
+  await ui.tick(); await ui.visibility(true); await ui.visibility(false);
+  await ui.outbound([{ id: "beta-web-turn", applianceId: "evie", userText: "Hello", reply: { text: "Local reply", source: "local" }, origin: "web" }]);
+  ui.unmount(); await ui.settle();
+  assert.deepEqual(ui.requests, []); assert.deepEqual(ui.commands, []); assert.deepEqual(ui.deliveries, []);
+  assert.equal(ui.timers.size, 0); assert.equal(cookie.context, "home-A", "Public preview never mutates local remembered identity");
 });
 
 test("replaced tabs stop instead of fighting over remembered pairing", async () => {
